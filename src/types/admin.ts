@@ -257,6 +257,7 @@ export interface DashboardStats {
     orders: number[];
   };
   recentOrders: OrderItem[];
+  recentWholesale?: WholesaleRequestItem[];
   recentSubscribers?: NewsletterSubscriberItem[];
   recentContacts?: ContactMessageItem[];
   bestSellingProducts: {

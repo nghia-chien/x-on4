@@ -32,8 +32,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const isPublicAuthPage = pathname === "/admin/login" || pathname === "/admin/register";
-
   const refreshUser = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me");
@@ -75,9 +73,25 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       const json = await res.json();
       if (res.ok && json.success && json.data) {
         setUser(json.data.user);
-        setToken(json.data.token || "active-cookie-session");
+        const tok = json.data.token || "active-cookie-session";
+        setToken(tok);
+        if (typeof window !== "undefined" && json.data.token) {
+          localStorage.setItem("admin_token", json.data.token);
+        }
         setIsLoading(false);
-        router.push("/admin");
+
+        const userRole = json.data.user?.role;
+        if (
+          userRole === "Super Admin" ||
+          userRole === "Administrator" ||
+          userRole === "Admin" ||
+          userRole === "Editor"
+        ) {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
+
         return { success: true };
       } else {
         setIsLoading(false);
@@ -102,9 +116,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       const json = await res.json();
       if (res.ok && json.success && json.data) {
         setUser(json.data.user);
-        setToken(json.data.token || "active-cookie-session");
+        const tok = json.data.token || "active-cookie-session";
+        setToken(tok);
+        if (typeof window !== "undefined" && json.data.token) {
+          localStorage.setItem("admin_token", json.data.token);
+        }
         setIsLoading(false);
-        router.push("/admin");
+
+        // User & Wholesale registrants redirect to Home
+        router.push("/");
+
         return { success: true };
       } else {
         setIsLoading(false);
@@ -126,15 +147,21 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null);
       setToken(null);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("admin_token");
+      }
       setIsLoading(false);
-      router.push("/admin/login");
+      if (pathname.startsWith("/admin")) {
+        router.push("/login");
+      } else {
+        router.push("/");
+      }
     }
   };
 
   const hasRole = useCallback(
     (allowedRoles: AdminRole[]) => {
       if (!user) return false;
-      // Super Admin and Administrator have unrestricted access across all admin features
       if (user.role === "Super Admin" || user.role === "Administrator") {
         return true;
       }

@@ -71,12 +71,15 @@ export function Header() {
   const [accountOpen, setAccountOpen] = useState(false);
 
   const handleAccountClick = () => {
+    if (!authUser) {
+      router.push("/login");
+      return;
+    }
     if (
-      authUser &&
-      (authUser.role === "Super Admin" ||
-        authUser.role === "Administrator" ||
-        authUser.role === "Admin" ||
-        authUser.role === "Editor")
+      authUser.role === "Super Admin" ||
+      authUser.role === "Administrator" ||
+      authUser.role === "Admin" ||
+      authUser.role === "Editor"
     ) {
       router.push("/admin");
     } else {
@@ -329,25 +332,91 @@ export function Header() {
         </button>
       )}
 
-      {/* 1 Single Account Icon with Smart Role-Based Navigation */}
-      <button
-        type="button"
-        onClick={() => {
-          handleLinkClick();
-          handleAccountClick();
-        }}
-        className="p-1.5 hover:text-rose-700 transition-colors cursor-pointer relative"
-        title={authUser ? `My Account (${authUser.name})` : "My Account / Log In"}
-        aria-label="My Account"
-      >
-        {authUser ? (
-          <div className="w-6 h-6 rounded-full bg-[#c9776c] text-white font-bold text-[11px] flex items-center justify-center shadow-2xs">
-            {authUser.name.charAt(0).toUpperCase()}
-          </div>
-        ) : (
-          <User className="w-5 h-5 stroke-[1.5]" />
+      {/* 1 Single Account Icon with Smart Popover Menu */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => {
+            if (authUser) {
+              setAccountOpen(!accountOpen);
+            } else {
+              handleLinkClick();
+              router.push("/login");
+            }
+          }}
+          className="p-1.5 hover:text-rose-700 transition-colors cursor-pointer relative"
+          title={authUser ? `Account (${authUser.name})` : "Log In / Register"}
+          aria-label="My Account"
+        >
+          {authUser ? (
+            <div className="w-6 h-6 rounded-full bg-[#c9776c] text-white font-bold text-[11px] flex items-center justify-center shadow-2xs">
+              {authUser.name.charAt(0).toUpperCase()}
+            </div>
+          ) : (
+            <User className="w-5 h-5 stroke-[1.5]" />
+          )}
+        </button>
+
+        {/* Account Popover Dropdown when Logged In */}
+        {authUser && accountOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40 cursor-default"
+              onClick={() => setAccountOpen(false)}
+            />
+            <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-neutral-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-gray-800">
+              <div className="px-4 py-2 border-b border-neutral-100">
+                <p className="text-xs font-bold text-neutral-900 truncate">{authUser.name}</p>
+                <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">{authUser.role}</p>
+              </div>
+
+              <div className="py-1 text-xs font-medium">
+                <Link
+                  href="/login"
+                  onClick={() => {
+                    setAccountOpen(false);
+                    handleLinkClick();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                >
+                  <User className="w-4 h-4 text-neutral-500" />
+                  <span>My Account</span>
+                </Link>
+
+                {(authUser.role === "Super Admin" ||
+                  authUser.role === "Administrator" ||
+                  authUser.role === "Admin" ||
+                  authUser.role === "Editor") && (
+                    <Link
+                      href="/admin"
+                      onClick={() => {
+                        setAccountOpen(false);
+                        handleLinkClick();
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                      <span>Admin Portal</span>
+                    </Link>
+                  )}
+              </div>
+
+              <div className="border-t border-neutral-100 pt-1">
+                <button
+                  onClick={() => {
+                    setAccountOpen(false);
+                    authLogout();
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors text-left cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          </>
         )}
-      </button>
+      </div>
 
       <button
         onClick={openCart}
@@ -435,11 +504,10 @@ export function Header() {
 
         {/* Mega Menu Dropdown */}
         <div
-          className={`absolute top-full left-0 right-0 w-full bg-[#faece9]/90 backdrop-blur-md shadow-2xl border-t border-gray-100 transition-all duration-200 z-50 ${
-            isShopMenuOpen
+          className={`absolute top-full left-0 right-0 w-full bg-[#faece9]/90 backdrop-blur-md shadow-2xl border-t border-gray-100 transition-all duration-200 z-50 ${isShopMenuOpen
               ? "opacity-100 visible pointer-events-auto"
               : "opacity-0 invisible pointer-events-none"
-          }`}
+            }`}
         >
           {/* Container bên trong để nội dung không bị tràn sát mép */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
@@ -467,92 +535,92 @@ export function Header() {
 
               {/* ===== CỘT 2: UL LIST (3/12) ===== */}
               <div className="col-span-3 rounded-xl border border-neutral-100 bg-neutral-50/40 p-4">
-              <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-1.5">
-                Product Type
-              </h4>
-              <ul className="space-y-1.5 text-xs text-gray-600 font-normal">
-                <li>
-                  <Link
-                    href="/product-category/product-type/handmade-grip-x-nails"
-                    onClick={handleLinkClick}
-                    className="hover:text-rose-700 transition-colors block py-0.5"
-                  >
-                    HANDMADE X-ON NAILS
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/product-category/product-type/cold-gel-glue"
-                    onClick={handleLinkClick}
-                    className="hover:text-rose-700 transition-colors block py-0.5"
-                  >
-                    Cold Gel Glue
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/product-category/product-type/cold-gel-remover"
-                    onClick={handleLinkClick}
-                    className="hover:text-rose-700 transition-colors block py-0.5"
-                  >
-                    Cold gel remover
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/product-category/product-type/best-seller"
-                    onClick={handleLinkClick}
-                    className="hover:text-rose-700 transition-colors block py-0.5"
-                  >
-                    Best seller
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/gallery-product"
-                    onClick={handleLinkClick}
-                    className="hover:text-rose-700 transition-colors block py-0.5"
-                  >
-                    Product Gallery
-                  </Link>
-                </li>
-              </ul>
+                <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-1.5">
+                  Product Type
+                </h4>
+                <ul className="space-y-1.5 text-xs text-gray-600 font-normal">
+                  <li>
+                    <Link
+                      href="/product-category/product-type/handmade-grip-x-nails"
+                      onClick={handleLinkClick}
+                      className="hover:text-rose-700 transition-colors block py-0.5"
+                    >
+                      HANDMADE X-ON NAILS
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/product-category/product-type/cold-gel-glue"
+                      onClick={handleLinkClick}
+                      className="hover:text-rose-700 transition-colors block py-0.5"
+                    >
+                      Cold Gel Glue
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/product-category/product-type/cold-gel-remover"
+                      onClick={handleLinkClick}
+                      className="hover:text-rose-700 transition-colors block py-0.5"
+                    >
+                      Cold gel remover
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/product-category/product-type/best-seller"
+                      onClick={handleLinkClick}
+                      className="hover:text-rose-700 transition-colors block py-0.5"
+                    >
+                      Best seller
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/gallery-product"
+                      onClick={handleLinkClick}
+                      className="hover:text-rose-700 transition-colors block py-0.5"
+                    >
+                      Product Gallery
+                    </Link>
+                  </li>
+                </ul>
 
-              <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-1.5 pt-3">
-                Design Theme
-              </h4>
-              <ul className="space-y-1.5 text-xs text-gray-600 font-normal">
-                <li>
-                  <Link
-                    href="/product-category/design-theme/3d"
-                    onClick={handleLinkClick}
-                    className="hover:text-rose-700 block py-0.5"
-                  >
-                    3D
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/product-category/design-theme/flower"
-                    onClick={handleLinkClick}
-                    className="hover:text-rose-700 block py-0.5"
-                  >
-                    Flower
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/product-category/design-theme/y2k"
-                    onClick={handleLinkClick}
-                    className="hover:text-rose-700 block py-0.5"
-                  >
-                    Y2K
-                  </Link>
-                </li>
-              </ul>
+                <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-1.5 pt-3">
+                  Design Theme
+                </h4>
+                <ul className="space-y-1.5 text-xs text-gray-600 font-normal">
+                  <li>
+                    <Link
+                      href="/product-category/design-theme/3d"
+                      onClick={handleLinkClick}
+                      className="hover:text-rose-700 block py-0.5"
+                    >
+                      3D
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/product-category/design-theme/flower"
+                      onClick={handleLinkClick}
+                      className="hover:text-rose-700 block py-0.5"
+                    >
+                      Flower
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/product-category/design-theme/y2k"
+                      onClick={handleLinkClick}
+                      className="hover:text-rose-700 block py-0.5"
+                    >
+                      Y2K
+                    </Link>
+                  </li>
+                </ul>
 
               </div>
-              
+
 
               {/* ===== CỘT 3: BENTO (6/12) ===== */}
               <div className="col-span-6 flex flex-col gap-3">
@@ -744,39 +812,39 @@ export function Header() {
         </div>
 
         {/* Desktop Balanced Navigation Bar */}
-<nav className="hidden lg:block bg-white relative">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="flex items-center justify-end h-11 xl:h-12 gap-4">
+        <nav className="hidden lg:block bg-white relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-end h-11 xl:h-12 gap-4">
 
-      {/* Nav Links */}
-      <div className="flex items-center shrink-0">
-        {renderNavLinks()}
-      </div>
+              {/* Nav Links */}
+              <div className="flex items-center shrink-0">
+                {renderNavLinks()}
+              </div>
 
-      {/* Search + Actions */}
-      <div className="flex items-center gap-3 shrink-0">
-        {/* Search Input Pill */}
-        <div className="relative w-44 xl:w-56">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              if (!searchOpen) setSearchOpen(true);
-            }}
-            onFocus={() => setSearchOpen(true)}
-            placeholder="Search for nails..."
-            className="w-full pl-10 pr-4 py-2 bg-neutral-100 hover:bg-neutral-200/70 focus:bg-white border border-transparent focus:border-neutral-300 rounded-full text-xs text-gray-900 placeholder:text-neutral-400 focus:outline-none transition-colors"
-          />
-        </div>
+              {/* Search + Actions */}
+              <div className="flex items-center gap-3 shrink-0">
+                {/* Search Input Pill */}
+                <div className="relative w-44 xl:w-56">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      if (!searchOpen) setSearchOpen(true);
+                    }}
+                    onFocus={() => setSearchOpen(true)}
+                    placeholder="Search for nails..."
+                    className="w-full pl-10 pr-4 py-2 bg-neutral-100 hover:bg-neutral-200/70 focus:bg-white border border-transparent focus:border-neutral-300 rounded-full text-xs text-gray-900 placeholder:text-neutral-400 focus:outline-none transition-colors"
+                  />
+                </div>
 
-        {renderActions(true, true)}
-      </div>
+                {renderActions(true, true)}
+              </div>
 
-    </div>
-  </div>
-</nav>
+            </div>
+          </div>
+        </nav>
 
         {/* Dropdown Full-Width Search Bar Attached Under Header */}
         {searchOpen && (
@@ -785,8 +853,8 @@ export function Header() {
 
             <div className="absolute top-full left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-md transition-all animate-in slide-in-from-top-2 duration-150">
               <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3">
-                        {/* Search Form Row */}
-                        <form onSubmit={(e) => handleSearchSubmit(e)} className="relative flex items-center gap-2">
+                {/* Search Form Row */}
+                <form onSubmit={(e) => handleSearchSubmit(e)} className="relative flex items-center gap-2">
 
                   {/* INPUT — ẩn trên desktop (lg:hidden), vì input đã ở nav bar */}
                   <div className="relative flex-1 flex items-center bg-white border border-neutral-300 focus-within:border-black rounded-none px-3 py-1.5 sm:py-2 transition-colors lg:hidden">
@@ -1207,7 +1275,7 @@ export function Header() {
                 >
                   <span className="flex items-center gap-2">
                     <User className="w-4 h-4 text-[#c9776c]" />
-                    <span>{authUser ? `Account (${authUser.name.split(" ")[0]})` : "My Account / Log In"}</span>
+                    <span>{authUser ? `Account (${authUser.name.split(" ")[0]})` : "Log In / Register"}</span>
                   </span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>

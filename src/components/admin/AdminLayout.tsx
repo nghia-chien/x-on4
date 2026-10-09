@@ -18,7 +18,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !user && !isPublicAuthPage) {
-      router.push("/admin/login");
+      router.push("/login");
     }
   }, [isLoading, user, isPublicAuthPage, router]);
 

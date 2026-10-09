@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DataStore } from "@/lib/dataStore";
 import { generateToken, hashPassword } from "@/lib/auth";
-import { AdminRole } from "@/types/admin";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, password, role } = body;
+    const { name, email, password } = body;
 
     if (!name || name.trim().length < 2) {
       return NextResponse.json(
@@ -33,28 +32,19 @@ export async function POST(req: NextRequest) {
     const existingUser = DataStore.getAdminByEmail(email.trim());
     if (existingUser) {
       return NextResponse.json(
-        { success: false, message: "An account with this email already exists" },
+        { success: false, message: "An account with this email address already exists" },
         { status: 400 }
       );
     }
 
-    const validRoles: AdminRole[] = [
-      "Super Admin",
-      "Administrator",
-      "Admin",
-      "Editor",
-      "Wholesale Partner",
-      "Retail Customer",
-    ];
-
-    const selectedRole: AdminRole = validRoles.includes(role) ? role : "Admin";
-
+    // SECURITY ENFORCEMENT: Public registration ALWAYS assigns "Retail Customer" role.
+    // Ignores any role property passed in the request body to prevent privilege escalation.
     const passwordHash = await hashPassword(password);
     const newAdmin = DataStore.createAdmin({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       passwordHash,
-      role: selectedRole,
+      role: "Retail Customer",
       status: "active",
     });
 

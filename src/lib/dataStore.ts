@@ -437,9 +437,22 @@ function initMemoryStore(): MemoryStore {
       location: "Austin, TX",
       quantity: "50-100 sets / month",
       message: "Interested in wholesale pricing for seasonal collections.",
-      status: "Contacted",
+      status: "New",
       adminNotes: "Waiting for resale tax certificate.",
       createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    },
+    {
+      id: "ws-3",
+      businessName: "Velvet Polish Salon & Lounge",
+      contactName: "Rachel Green",
+      email: "rachel@velvetpolish.com",
+      phone: "+1 (555) 678-9012",
+      businessType: "Nail Salon",
+      location: "New York, NY",
+      quantity: "200+ sets / month",
+      message: "Requesting custom salon retail pricing sheet and sample kit.",
+      status: "Contacted",
+      createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
     },
   ];
 
@@ -1194,14 +1207,42 @@ export const DataStore = {
 
     const recentOrders = store.orders.slice(0, 5);
 
-    const bestSellingProducts = store.products.slice(0, 4).map((p, i) => ({
-      id: p.id,
-      name: p.name,
-      image: p.thumbnail,
-      price: p.price,
-      quantitySold: 45 - i * 8,
-      revenue: (45 - i * 8) * p.price,
-    }));
+    // Dynamically calculate best sellers from real order items in store
+    const salesMap: Record<string, { id: string; name: string; image: string; price: number; quantitySold: number; revenue: number }> = {};
+    store.orders.forEach((ord) => {
+      if (Array.isArray(ord.items)) {
+        ord.items.forEach((item) => {
+          if (!salesMap[item.productId]) {
+            salesMap[item.productId] = {
+              id: item.productId,
+              name: item.productName,
+              image: item.productImage,
+              price: item.price,
+              quantitySold: 0,
+              revenue: 0,
+            };
+          }
+          salesMap[item.productId].quantitySold += item.quantity;
+          salesMap[item.productId].revenue += item.subtotal || item.price * item.quantity;
+        });
+      }
+    });
+
+    let bestSellingProducts = Object.values(salesMap)
+      .sort((a, b) => b.quantitySold - a.quantitySold)
+      .slice(0, 5);
+
+    // Fallback to top products if no orders exist yet
+    if (bestSellingProducts.length === 0) {
+      bestSellingProducts = store.products.slice(0, 4).map((p, i) => ({
+        id: p.id,
+        name: p.name,
+        image: p.thumbnail,
+        price: p.price,
+        quantitySold: 12 - i * 2,
+        revenue: (12 - i * 2) * p.price,
+      }));
+    }
 
     const lowStockProducts = store.products
       .filter((p) => p.stock <= 10)
@@ -1224,10 +1265,11 @@ export const DataStore = {
       wholesaleRequests,
       vipSubscribersCount: store.newsletter.length,
       contactMessagesCount: store.contactMessages.length,
+      recentOrders,
+      recentWholesale: store.wholesale.slice(0, 5),
       recentSubscribers: store.newsletter.slice(0, 10),
       recentContacts: store.contactMessages.slice(0, 5),
       salesOverview: { labels, revenue, orders },
-      recentOrders,
       bestSellingProducts,
       lowStockProducts,
     };

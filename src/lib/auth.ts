@@ -67,20 +67,32 @@ export async function requireAuth(
     if (payload) {
       const user = DataStore.getAdminById(payload.userId);
       if (user && user.status === "active") {
+        if (allowedRoles && allowedRoles.length > 0) {
+          const hasPermission =
+            user.role === "Super Admin" ||
+            user.role === "Administrator" ||
+            allowedRoles.includes(user.role);
+
+          if (!hasPermission) {
+            return {
+              user: null,
+              errorResponse: NextResponse.json(
+                { success: false, message: "Forbidden: Insufficient permissions" },
+                { status: 403 }
+              ),
+            };
+          }
+        }
         return { user, errorResponse: null };
       }
     }
   }
 
-  // Fallback default super admin user when auth is disabled
-  const defaultAdmin: AdminUser = {
-    id: "admin-default",
-    email: "admin@xon.com",
-    name: "Administrator",
-    role: "Super Admin",
-    status: "active",
-    createdAt: new Date().toISOString(),
+  return {
+    user: null,
+    errorResponse: NextResponse.json(
+      { success: false, message: "Unauthorized: Access token is missing or invalid" },
+      { status: 401 }
+    ),
   };
-
-  return { user: defaultAdmin, errorResponse: null };
 }

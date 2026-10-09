@@ -179,8 +179,27 @@ export default function AdminContactPage() {
                       </td>
 
                       <td className="py-3.5 px-4 align-top text-center whitespace-nowrap">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+                        <select
+                          value={msg.status}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value as "New" | "Replied" | "Resolved";
+                            try {
+                              const res = await fetch(`/api/contact`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ id: msg.id, status: newStatus }),
+                              });
+                              if (res.ok) {
+                                setMessages((prev) =>
+                                  prev.map((m) => (m.id === msg.id ? { ...m, status: newStatus } : m))
+                                );
+                                success(`Message status updated to ${newStatus}`);
+                              }
+                            } catch {
+                              error("Failed to update status");
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border cursor-pointer ${
                             msg.status === "New"
                               ? "bg-rose-50 text-rose-700 border-rose-200"
                               : msg.status === "Replied"
@@ -188,8 +207,10 @@ export default function AdminContactPage() {
                               : "bg-emerald-50 text-emerald-700 border-emerald-200"
                           }`}
                         >
-                          {msg.status}
-                        </span>
+                          <option value="New">New</option>
+                          <option value="Replied">Replied</option>
+                          <option value="Resolved">Resolved</option>
+                        </select>
                       </td>
 
                       <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap">

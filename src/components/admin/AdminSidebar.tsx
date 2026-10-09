@@ -76,25 +76,25 @@ export function AdminSidebar({
     exact?: boolean;
     roles?: AdminRole[];
   }[] = [
-    { label: "DASHBOARD", href: "/admin", icon: Home, exact: true },
-    { label: "PRODUCT", href: "/admin/products", icon: ShoppingBag, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
-    { label: "ORDER", href: "/admin/orders", icon: ShoppingCart, roles: ["Super Admin", "Administrator", "Admin"] },
-    { label: "WHOLESALE", href: "/admin/wholesale", icon: Briefcase, roles: ["Super Admin", "Administrator", "Admin", "Wholesale Partner"] },
-    { label: "JOURNAL", href: "/admin/blog", icon: FileText, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
-    { label: "VIP CLUB", href: "/admin/newsletter", icon: Sparkles, roles: ["Super Admin", "Administrator", "Admin"] },
-    { label: "CONTACT", href: "/admin/contact", icon: Mail, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
-    { label: "ADMIN USERS", href: "/admin/admin-users", icon: Users, roles: ["Super Admin", "Administrator"] },
+    { label: "Dashboard", href: "/admin", icon: Home, exact: true },
+    { label: "Products", href: "/admin/products", icon: ShoppingBag, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
+    { label: "Orders", href: "/admin/orders", icon: ShoppingCart, roles: ["Super Admin", "Administrator", "Admin"] },
+    { label: "Wholesale", href: "/admin/wholesale", icon: Briefcase, roles: ["Super Admin", "Administrator", "Admin", "Wholesale Partner"] },
+    { label: "Journal", href: "/admin/blog", icon: FileText, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
+    { label: "VIP Club", href: "/admin/newsletter", icon: Sparkles, roles: ["Super Admin", "Administrator", "Admin"] },
+    { label: "Inquiries", href: "/admin/contact", icon: Mail, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
+    { label: "Admin Users", href: "/admin/admin-users", icon: Users, roles: ["Super Admin", "Administrator"] },
   ];
 
   const getBadgeCount = (label: string) => {
     switch (label) {
-      case "WHOLESALE":
+      case "Wholesale":
         return counts.wholesale;
-      case "VIP CLUB":
+      case "VIP Club":
         return counts.vipClub;
-      case "CONTACT":
+      case "Inquiries":
         return counts.contact;
-      case "ORDER":
+      case "Orders":
         return counts.orders;
       default:
         return 0;
@@ -120,8 +120,9 @@ export function AdminSidebar({
         <Link
           href="/"
           title="Return to Main Website"
-          className={`relative block transition-transform hover:scale-105 ${isCollapsed && !isMobileOpen ? "h-11 w-11" : "h-14 w-36 sm:w-44"
-            }`}
+          className={`relative block transition-transform hover:scale-105 ${
+            isCollapsed && !isMobileOpen ? "h-11 w-11" : "h-14 w-36 sm:w-44"
+          }`}
           onClick={() => setIsMobileOpen(false)}
         >
           <Image
@@ -156,8 +157,8 @@ export function AdminSidebar({
 
       {/* Navigation list */}
       <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 px-3 mb-2">
-          {(!isCollapsed || isMobileOpen) && "Management"}
+        <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 px-3 mb-2">
+          {(!isCollapsed || isMobileOpen) && "Store Management"}
         </div>
 
         {filteredNavItems.map((item) => {
@@ -170,31 +171,27 @@ export function AdminSidebar({
               key={item.href}
               href={item.href}
               onClick={() => setIsMobileOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative ${active
-                  ? "bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200/80 shadow-xs"
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all group relative ${
+                active
+                  ? "bg-[#c9776c]/10 text-[#c9776c] font-bold border border-[#c9776c]/20 shadow-2xs"
                   : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80"
-                }`}
+              }`}
               title={isCollapsed && !isMobileOpen ? item.label : undefined}
             >
               <Icon
-                className={`w-5 h-5 shrink-0 transition-colors ${active ? "text-indigo-600" : "text-neutral-400 group-hover:text-neutral-600"
-                  }`}
+                className={`w-4 h-4 shrink-0 transition-colors ${
+                  active ? "text-[#c9776c]" : "text-neutral-400 group-hover:text-neutral-600"
+                }`}
               />
               {(!isCollapsed || isMobileOpen) && (
                 <>
                   <span className="truncate flex-1">{item.label}</span>
                   {badgeCount > 0 && (
                     <span
-                      className={`px-2 py-0.5 text-[11px] font-bold rounded-full transition-all shrink-0 ${
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-full transition-all shrink-0 ${
                         active
-                          ? "bg-indigo-600 text-white shadow-2xs"
-                          : item.label === "WHOLESALE"
-                          ? "bg-indigo-100 text-indigo-700 font-bold"
-                          : item.label === "VIP CLUB"
-                          ? "bg-amber-100 text-amber-800 font-bold"
-                          : item.label === "CONTACT"
-                          ? "bg-rose-100 text-rose-700 font-bold"
-                          : "bg-neutral-200 text-neutral-800"
+                          ? "bg-[#c9776c] text-white shadow-2xs"
+                          : "bg-rose-100 text-rose-700"
                       }`}
                     >
                       {badgeCount}
@@ -211,7 +208,7 @@ export function AdminSidebar({
                       {badgeCount > 99 ? "99+" : badgeCount}
                     </span>
                   ) : active ? (
-                    <span className="absolute right-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-indigo-600" />
+                    <span className="absolute right-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#c9776c]" />
                   ) : null}
                 </>
               )}
