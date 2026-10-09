@@ -55,6 +55,37 @@ export default function AuthPage() {
 
   // API submitting status
   const [isLoading, setIsLoading] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
+  // Parse error query param if redirected back from OAuth callback
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get("error");
+      if (err) {
+        setOauthError(decodeURIComponent(err));
+      }
+    }
+  }, []);
+
+  const handleSocialLogin = async (provider: "google" | "facebook") => {
+    setIsLoading(true);
+    setOauthError(null);
+    try {
+      const res = await fetch(`/api/auth/oauth?provider=${provider}`);
+      const data = await res.json();
+      if (data.success && data.url) {
+        window.location.href = data.url;
+      } else {
+        setOauthError(data.message || `Failed to initiate ${provider} authentication.`);
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error("Social login trigger error:", err);
+      setOauthError(`Network error while connecting to ${provider}.`);
+      setIsLoading(false);
+    }
+  };
 
   // Clear invalid errors on input change
   const handleInputChange = (field: string, value: string, setter: (v: string) => void) => {
@@ -372,6 +403,12 @@ export default function AuthPage() {
 
               {/* SOCIAL LOGIN DIVIDER & BUTTONS */}
               <div className="mt-3 pt-2.5 border-t border-black/5 space-y-2">
+                {oauthError && (
+                  <div className="p-2 bg-rose-50 border border-rose-200 rounded-xl text-[11px] text-rose-600 font-medium text-center">
+                    {oauthError}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2">
                   <div className="h-px bg-neutral-200/80 flex-1" />
                   <span className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold">Or continue with</span>
@@ -382,10 +419,9 @@ export default function AuthPage() {
                   {/* GOOGLE LOGIN */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setDemoAccount("customer@xonails.com");
-                    }}
-                    className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-neutral-50 active:scale-98 text-neutral-700 text-xs font-semibold rounded-full border border-neutral-200/80 shadow-2xs transition-all cursor-pointer group"
+                    disabled={isLoading}
+                    onClick={() => handleSocialLogin("google")}
+                    className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-neutral-50 active:scale-98 text-neutral-700 text-xs font-semibold rounded-full border border-neutral-200/80 shadow-2xs transition-all cursor-pointer disabled:opacity-50 group"
                   >
                     <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
                       <path
@@ -411,10 +447,9 @@ export default function AuthPage() {
                   {/* FACEBOOK LOGIN */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setDemoAccount("customer@xonails.com");
-                    }}
-                    className="flex items-center justify-center gap-2 py-2 px-3 bg-[#1877F2] hover:bg-[#166fe5] active:scale-98 text-white text-xs font-semibold rounded-full shadow-2xs transition-all cursor-pointer"
+                    disabled={isLoading}
+                    onClick={() => handleSocialLogin("facebook")}
+                    className="flex items-center justify-center gap-2 py-2 px-3 bg-[#1877F2] hover:bg-[#166fe5] active:scale-98 text-white text-xs font-semibold rounded-full shadow-2xs transition-all cursor-pointer disabled:opacity-50"
                   >
                     <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
                       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />

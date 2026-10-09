@@ -6,6 +6,12 @@ export type AdminRole =
   | "Admin"
   | "Editor";
 
+export interface OAuthAccount {
+  provider: "google" | "facebook";
+  providerAccountId: string;
+  emailVerified?: boolean;
+}
+
 export interface AdminUser {
   id: string;
   name: string;
@@ -14,10 +20,12 @@ export interface AdminUser {
   status: "active" | "inactive";
   lastLogin?: string;
   createdAt: string;
+  avatar?: string;
+  accounts?: OAuthAccount[];
 }
 
 export interface AdminUserWithPassword extends AdminUser {
-  passwordHash: string;
+  passwordHash?: string;
 }
 
 export interface ProductItem {
