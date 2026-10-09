@@ -372,7 +372,7 @@ export function Header() {
 
               <div className="py-1 text-xs font-medium">
                 <Link
-                  href="/login"
+                  href="/my-account"
                   onClick={() => {
                     setAccountOpen(false);
                     handleLinkClick();
