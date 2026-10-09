@@ -14,7 +14,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const isPublicAuthPage = pathname === "/admin/login" || pathname === "/admin/register";
+  const isPublicAuthPage = false;
 
   useEffect(() => {
     if (!isLoading && !user && !isPublicAuthPage) {

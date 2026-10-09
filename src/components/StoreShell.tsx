@@ -9,7 +9,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 export function StoreShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isAuthPage = pathname === "/login";
 
   if (isAdminRoute || isAuthPage) {
     return <>{children}</>;
