@@ -63,7 +63,7 @@ export function CartDrawer() {
                 <div key={item.id} className="py-4 flex gap-4 items-center">
                   <div className="relative w-20 h-20 rounded-md overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100">
                     <Image
-                      src={item.image || "/images/logolala.webp"}
+                      src={item.image || "/images/IMG_7098.webp"}
                       alt={item.title}
                       fill
                       sizes="80px"

@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Star, BadgeCheck, Sparkles, MapPin, Phone, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import productsData from "@/data/products.json";
 import siteContent from "@/data/site-content.json";
-import { type Product } from "@/components/ProductCard";
-import { mapApiProduct } from "@/lib/productMapper";
-import { Star } from "lucide-react";
+import { ProductCard, type Product } from "@/components/ProductCard";
+import { mapApiProduct, type ApiProductInput } from "@/lib/productMapper";
 
 const heroVideos = [
   {
@@ -24,21 +24,55 @@ const heroVideos = [
   },
 ];
 
+const AVATAR_GRADIENTS = [
+  "from-[#f4a8a0] to-[#f7cfc8]",
+  "from-[#e9b6d4] to-[#f6d9e8]",
+  "from-[#f2c19a] to-[#f9e0c8]",
+];
+
+const Stars = ({ size = "w-4 h-4" }: { size?: string }) => (
+  <div className="flex gap-0.5">
+    {[...Array(5)].map((_, i) => (
+      <Star key={i} className={`${size} fill-[#f5b301] text-[#f5b301]`} />
+    ))}
+  </div>
+);
+
+const GoogleG = () => (
+  <svg viewBox="0 0 48 48" className="w-4 h-4" aria-hidden>
+    <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z" />
+    <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z" />
+    <path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.100 0 24s.9 7.600 2.600 10.800l7.900-6.100z" />
+    <path fill="#34A853" d="M24 48c6.5 0 11.900-2.100 15.900-5.800l-7.500-5.800c-2.100 1.400-4.800 2.300-8.400 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z" />
+  </svg>
+);
+
 export default function HomePage() {
   const [heroVideoIndex, setHeroVideoIndex] = useState(0);
   const heroVideoRef = React.useRef<HTMLVideoElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const [productsList, setProductsList] = useState<Product[]>(() =>
-    (productsData as any[]).map(mapApiProduct)
+    (productsData as unknown as ApiProductInput[]).map(mapApiProduct)
   );
 
   const handleHeroVideoEnded = () => {
     setHeroVideoIndex((prev) => (prev + 1) % heroVideos.length);
   };
 
+  const scroll = (direction: "left" | "right") => {
+    if (!scrollRef.current) return;
+    const cardWidth = scrollRef.current.querySelector("div")?.clientWidth ?? 300;
+    const gap = 20;
+    scrollRef.current.scrollBy({
+      left: direction === "left" ? -(cardWidth + gap) : cardWidth + gap,
+      behavior: "smooth",
+    });
+  };
+
   useEffect(() => {
     if (heroVideoRef.current) {
-      heroVideoRef.current.play().catch(() => { });
+      heroVideoRef.current.play().catch(() => {});
     }
   }, [heroVideoIndex]);
 
@@ -64,9 +98,10 @@ export default function HomePage() {
   const reviews = siteContent.reviews || [];
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
-      {/* 1. HERO VIDEO BANNER (16:9 ratio exactly as Flatsome) */}
-      <section className="relative w-full overflow-hidden bg-black aspect-video max-h-[calc(100vh-125px)]">
+    <div className="flex flex-col min-h-screen bg-white text-gray-900 overflow-x-hidden">
+      
+      {/* 1. HERO VIDEO BANNER */}
+      <section className="relative w-full overflow-hidden bg-black aspect-video max-h-[calc(100vh-120px)] min-h-[440px] sm:min-h-[540px]">
         <video
           ref={heroVideoRef}
           key={heroVideos[heroVideoIndex].src}
@@ -78,52 +113,145 @@ export default function HomePage() {
           disableRemotePlayback
           poster={heroVideos[heroVideoIndex].poster}
           onEnded={handleHeroVideoEnded}
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-opacity duration-500"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-opacity duration-700"
         >
           <source src={heroVideos[heroVideoIndex].src} type="video/mp4" />
         </video>
 
-        {/* 30% Dark overlay */}
-        <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+        {/* Soft Luxury Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/20 pointer-events-none" />
 
-        {/* Buttons and slide indicators at bottom */}
-        <div className="absolute bottom-6 sm:bottom-12 inset-x-0 z-10 flex items-center justify-between max-w-7xl mx-auto px-6 sm:px-12 gap-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Link
-              href="/shop"
-              className="px-6 sm:px-8 py-2.5 sm:py-3.5 border-2 border-white text-white text-xs sm:text-sm font-bold uppercase tracking-wider rounded-lg hover:bg-white hover:text-black transition-colors shadow-lg"
-            >
-              SHOP NOW
-            </Link>
-            <a
-              href="tel:+16892128888"
-              className="px-6 sm:px-8 py-2.5 sm:py-3.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold uppercase tracking-wider rounded-lg transition-colors shadow-lg"
-            >
-              CALL NOW
-            </a>
-          </div>
+        {/* Hero Content & Action Controls */}
+        <div className="absolute inset-0 z-10 flex flex-col justify-end max-w-7xl mx-auto px-6 sm:px-12 pb-8 sm:pb-14">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            
+            {/* Headline & Subtitle */}
+            <div className="max-w-xl space-y-2 sm:space-y-3">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight text-white font-serif leading-tight drop-shadow-md">
+                Elevate Your Manicure
+              </h1>
 
-          {/* Video Indicators */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {heroVideos.map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setHeroVideoIndex(idx)}
-                aria-label={`Switch to video ${idx + 1}`}
-                className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 cursor-pointer pointer-events-auto ${idx === heroVideoIndex
-                  ? "w-6 sm:w-8 bg-white shadow"
-                  : "w-2 bg-white/50 hover:bg-white/80"
-                  }`}
-              />
-            ))}
+              <p className="text-xs sm:text-sm text-neutral-200 font-light leading-relaxed max-w-md drop-shadow-sm">
+                Salon-grade durability in 15 minutes with damage-free Cold Gel Glue technology. Reusable &amp; custom fitted.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex items-center gap-3 sm:gap-4">
+                <Link
+                  href="/shop"
+                  className="px-7 py-3 sm:px-8 sm:py-3.5 bg-white hover:bg-neutral-100 text-black text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl transition-all shadow-xl hover:scale-102 flex items-center gap-2"
+                >
+                  <span>SHOP NOW</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <a
+                  href="tel:+16892128888"
+                  className="px-6 py-3 sm:px-7 sm:py-3.5 bg-amber-600/90 hover:bg-amber-600 text-white text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl transition-all shadow-lg hover:shadow-amber-600/30 hover:scale-102 flex items-center gap-2 backdrop-blur-sm"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>CALL NOW</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Video Slide Indicator Badge */}
+            <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 w-fit">
+              <span className="text-[11px] font-mono text-neutral-300">
+                0{heroVideoIndex + 1} / 0{heroVideos.length}
+              </span>
+              <div className="flex items-center gap-1.5">
+                {heroVideos.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setHeroVideoIndex(idx)}
+                    aria-label={`Switch to video ${idx + 1}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer pointer-events-auto ${
+                      idx === heroVideoIndex
+                        ? "w-6 bg-white shadow-sm"
+                        : "w-2 bg-white/40 hover:bg-white/70"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* 2. THREE-VIDEO FULL-WIDTH STRIP - FLUSH / ZERO GAP */}
-      <section className="hidden md:block w-full bg-black overflow-hidden p-0 m-0">
-        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-0 p-0 m-0">
+      {/* 2. SECTION: THE X-ON COLLECTION (Blush Pink Gradient Background) */}
+      <section className="relative py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-[#faece9] via-[#fdf4f1] to-[#faece9] w-full overflow-hidden">
+        {/* Soft Ambient Blob */}
+        <div aria-hidden className="pointer-events-none absolute -top-24 -left-20 w-80 h-80 rounded-full bg-[#f6c9c1]/35 blur-3xl" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+
+          {/* ===== HEADER: Tiêu đề + View All ===== */}
+          <div className="flex items-end justify-between border-b border-rose-200/60 pb-4">
+            <div className="text-left space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-rose-800 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-rose-600" />
+                Handcrafted Press-On Artistry
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-serif font-semibold text-gray-950">
+                The X-ON Collection
+              </h2>
+            </div>
+
+            <Link
+              href="/product-category/product-type/handmade-grip-x-nails"
+              className="hidden sm:inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-rose-900 hover:text-black transition-colors pb-0.5 group"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          {/* ===== HORIZONTAL SCROLL + ARROWS ===== */}
+          <div className="relative">
+            {/* Left Scroll Button */}
+            <button
+              type="button"
+              onClick={() => scroll("left")}
+              aria-label="Scroll left"
+              className="hidden sm:flex absolute -left-4 lg:-left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-xs shadow-md border border-rose-200 text-gray-800 hover:bg-black hover:text-white hover:border-black transition-all cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            {/* Right Scroll Button */}
+            <button
+              type="button"
+              onClick={() => scroll("right")}
+              aria-label="Scroll right"
+              className="hidden sm:flex absolute -right-4 lg:-right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-xs shadow-md border border-rose-200 text-gray-800 hover:bg-black hover:text-white hover:border-black transition-all cursor-pointer"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+
+            {/* Product Cards Carousel */}
+            <div
+              ref={scrollRef}
+              className="flex gap-4 sm:gap-6 overflow-x-auto scroll-smooth pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
+            >
+              {handmadeNails.map((prod) => (
+                <div
+                  key={prod.id}
+                  className="shrink-0 w-[72%] xs:w-[62%] sm:w-[45%] lg:w-[23.5%]"
+                >
+                  <ProductCard product={prod} variant="shop" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 3. THREE-VIDEO FULL-WIDTH STRIP */}
+      <section className="hidden md:block w-full bg-neutral-950 overflow-hidden p-0 m-0">
+        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-0.5 p-0 m-0 bg-neutral-900">
           {/* Video 1 */}
           <div className="relative aspect-[9/16] w-full overflow-hidden bg-black pointer-events-none">
             <video
@@ -135,7 +263,7 @@ export default function HomePage() {
               disablePictureInPicture
               disableRemotePlayback
               poster="/images/IMG_7098.webp"
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none hover:scale-105 transition-transform duration-700"
             >
               <source src="/videos/1K34PRO84_DMCL0D.mp4" type="video/mp4" />
             </video>
@@ -152,7 +280,7 @@ export default function HomePage() {
               disablePictureInPicture
               disableRemotePlayback
               poster="/images/IMG_7099.webp"
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none hover:scale-105 transition-transform duration-700"
             >
               <source src="/videos/1K34PRO8K_DMCL0D.mp4" type="video/mp4" />
             </video>
@@ -169,7 +297,7 @@ export default function HomePage() {
               disablePictureInPicture
               disableRemotePlayback
               poster="/images/IMG_7100.webp"
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none hover:scale-105 transition-transform duration-700"
             >
               <source src="/videos/1K34PRO8E_DMCL0D.mp4" type="video/mp4" />
             </video>
@@ -177,91 +305,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. SECTION: HANDMADE GRIP-X NAILS (Color 1: Blush Pink #faece9 with Floral & Tool Motifs) */}
-      <section className="relative py-14 sm:py-20 bg-[#faece9] border-t border-b border-[#f3dedb] w-full overflow-hidden">
-        {/* Background Decorative Motifs */}
-        <div className="absolute -top-10 -left-10 w-48 h-48 sm:w-64 sm:h-64 opacity-30 pointer-events-none select-none rotate-[-15deg]">
-          <Image
-            src="/images/decorations/rose-bloom.webp"
-            alt=""
-            fill
-            sizes="256px"
-            className="object-contain"
-          />
-        </div>
-        <div className="absolute top-1/4 -right-10 w-56 h-56 sm:w-72 sm:h-72 opacity-30 pointer-events-none select-none rotate-12">
-          <Image
-            src="/images/decorations/daisy-cluster.webp"
-            alt=""
-            fill
-            sizes="288px"
-            className="object-contain"
-          />
-        </div>
-        <div className="absolute -bottom-8 -left-6 w-36 h-36 sm:w-48 sm:h-48 opacity-25 pointer-events-none select-none rotate-[-20deg]">
-          <Image
-            src="/images/decorations/gold-scissors.webp"
-            alt=""
-            fill
-            sizes="192px"
-            className="object-contain"
-          />
-        </div>
-        <div className="absolute -bottom-10 right-4 sm:right-10 w-36 h-44 sm:w-48 sm:h-56 opacity-25 pointer-events-none select-none rotate-15">
-          <Image
-            src="/images/decorations/polish-bottle.webp"
-            alt=""
-            fill
-            sizes="192px"
-            className="object-contain"
-          />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-widest text-gray-900 font-serif">
-              THE X-ON COLLECTION
-            </h1>
-            <div className="w-12 h-0.5 bg-rose-400 mx-auto mt-3" />
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {handmadeNails.map((prod) => (
-              <div key={prod.id} className="group flex flex-col bg-white rounded-lg p-3 shadow-xs border border-[#eedad7] hover:shadow-md transition-shadow">
-                <div className="relative aspect-square w-full overflow-hidden bg-neutral-100 rounded-md">
-                  <Link href={`/product/${prod.slug}`} className="relative block w-full h-full">
-                    <Image
-                      src={prod.image}
-                      alt={prod.title}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </Link>
-                </div>
-                <div className="py-3 text-center">
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide truncate">
-                    <Link href={`/product/${prod.slug}`}>{prod.title}</Link>
-                  </h3>
-                  <p className="text-xs sm:text-sm font-bold text-gray-800 mt-1">
-                    {prod.price}
-                  </p>
-                  <div className="mt-2.5">
-                    <Link
-                      href={`/product/${prod.slug}`}
-                      className="inline-block w-full py-2 border border-black hover:bg-black hover:text-white text-[11px] font-bold uppercase tracking-wider text-black rounded-sm transition-colors"
-                    >
-                      Select Options
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Mobile Video 1: Between Collection & Best Seller */}
+      {/* Mobile Video 1 */}
       <div className="md:hidden w-full overflow-hidden bg-black relative aspect-[9/16] max-h-[540px]">
         <video
           autoPlay
@@ -278,94 +322,42 @@ export default function HomePage() {
         </video>
       </div>
 
-      {/* 4. SECTION: BEST SELLER (Color 2: Pure White #ffffff with Brush, Daisies & Stars Motifs) */}
-      <section className="relative py-14 sm:py-20 bg-white w-full overflow-hidden">
-        {/* Background Decorative Motifs */}
-        <div className="absolute top-8 -left-8 w-52 h-52 sm:w-68 sm:h-68 opacity-25 pointer-events-none select-none rotate-12">
-          <Image
-            src="/images/decorations/petals-scatter.webp"
-            alt=""
-            fill
-            sizes="272px"
-            className="object-contain"
-          />
-        </div>
-        <div className="absolute top-1/4 right-2 sm:right-8 w-36 h-48 sm:w-48 sm:h-64 opacity-25 pointer-events-none select-none rotate-[35deg]">
-          <Image
-            src="/images/decorations/pink-brush.webp"
-            alt=""
-            fill
-            sizes="256px"
-            className="object-contain"
-          />
-        </div>
-        <div className="absolute -bottom-8 -left-6 w-48 h-48 sm:w-60 sm:h-60 opacity-25 pointer-events-none select-none rotate-[-10deg]">
-          <Image
-            src="/images/decorations/daisy-rose-sprig.webp"
-            alt=""
-            fill
-            sizes="240px"
-            className="object-contain"
-          />
-        </div>
-        <div className="absolute -bottom-8 -right-8 w-44 h-44 sm:w-56 sm:h-56 opacity-25 pointer-events-none select-none rotate-[-15deg]">
-          <Image
-            src="/images/decorations/gold-stars.webp"
-            alt=""
-            fill
-            sizes="224px"
-            className="object-contain"
-          />
-        </div>
+      {/* 4. SECTION: BEST SELLER */}
+      <section className="relative py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-[#fdf4f1] via-[#faece9] to-[#fdf4f1] w-full overflow-hidden">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-widest text-gray-900 font-serif">
-              Best seller
-            </h1>
-            <div className="w-12 h-0.5 bg-neutral-300 mx-auto mt-3" />
+          {/* ===== HEADER ===== */}
+          <div className="flex items-end justify-between border-b border-rose-200/60 pb-4">
+            <div className="text-left space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-rose-800 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-rose-600" />
+                Most Loved Styles
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-serif font-semibold text-gray-950">
+                Best Sellers
+              </h2>
+            </div>
+
+            <Link
+              href="/product-category/product-type/handmade-grip-x-nails"
+              className="hidden sm:inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-rose-900 hover:text-black transition-colors pb-0.5 group"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
 
+          {/* ===== PRODUCT GRID ===== */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {bestSellers.map((prod, idx) => (
-              <div key={prod.id} className="group flex flex-col bg-white rounded-lg p-3 shadow-xs border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="relative aspect-square w-full overflow-hidden bg-neutral-100 rounded-md">
-                  <span className="absolute top-2 left-2 z-10 bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                    {idx % 2 === 0 ? "17% OFF" : "25% OFF"}
-                  </span>
-                  <Link href={`/product/${prod.slug}`} className="relative block w-full h-full">
-                    <Image
-                      src={prod.image}
-                      alt={prod.title}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </Link>
-                </div>
-                <div className="py-3 text-center">
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide truncate">
-                    <Link href={`/product/${prod.slug}`}>{prod.title}</Link>
-                  </h3>
-                  <p className="text-xs sm:text-sm font-bold text-gray-800 mt-1">
-                    {prod.price}
-                  </p>
-                  <div className="mt-2.5">
-                    <Link
-                      href={`/product/${prod.slug}`}
-                      className="inline-block w-full py-2 border border-black hover:bg-black hover:text-white text-[11px] font-bold uppercase tracking-wider text-black rounded-sm transition-colors"
-                    >
-                      Select Options
-                    </Link>
-                  </div>
-                </div>
-              </div>
+            {bestSellers.map((prod) => (
+              <ProductCard key={prod.id} product={prod} variant="shop" />
             ))}
           </div>
+
         </div>
       </section>
 
-      {/* Mobile Video 2: Between Best Seller & Reviews */}
+      {/* Mobile Video 2 */}
       <div className="md:hidden w-full overflow-hidden bg-black relative aspect-[9/16] max-h-[540px]">
         <video
           autoPlay
@@ -382,145 +374,126 @@ export default function HomePage() {
         </video>
       </div>
 
-      {/* 5. SECTION: OUR REVIEWS (Color 1: Blush Pink #faece9 with Daisy & Scissors Motifs) */}
-      <section className="relative py-16 bg-[#faece9] border-t border-b border-[#f3dedb] w-full overflow-hidden">
-        {/* Background Decorative Motifs */}
-        <div className="absolute -top-10 -right-10 w-52 h-52 sm:w-68 sm:h-68 opacity-25 pointer-events-none select-none rotate-20">
-          <Image
-            src="/images/decorations/rose-bloom.webp"
-            alt=""
-            fill
-            sizes="272px"
-            className="object-contain"
-          />
-        </div>
-        <div className="absolute top-1/3 -left-8 w-44 h-44 sm:w-56 sm:h-56 opacity-25 pointer-events-none select-none rotate-[-15deg]">
-          <Image
-            src="/images/decorations/chamomile-sprig.webp"
-            alt=""
-            fill
-            sizes="224px"
-            className="object-contain"
-          />
-        </div>
-        <div className="absolute -bottom-8 -right-8 w-36 h-36 sm:w-48 sm:h-48 opacity-20 pointer-events-none select-none rotate-[-25deg]">
-          <Image
-            src="/images/decorations/gold-scissors.webp"
-            alt=""
-            fill
-            sizes="192px"
-            className="object-contain"
-          />
-        </div>
-        <div className="absolute -bottom-8 left-10 w-52 h-52 sm:w-68 sm:h-68 opacity-25 pointer-events-none select-none -rotate-12">
-          <Image
-            src="/images/decorations/petals-scatter.webp"
-            alt=""
-            fill
-            sizes="272px"
-            className="object-contain"
-          />
-        </div>
+      {/* 5. SECTION: OUR REVIEWS */}
+      <section className="relative w-full overflow-hidden py-14 sm:py-18 lg:py-22 bg-gradient-to-b from-[#fdf4f1] via-[#faece9] to-[#fdf4f1]">
+        {/* Soft Blobs */}
+        <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-[#f6c9c1]/40 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-[#e9c6e0]/40 blur-3xl" />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-widest text-gray-900 font-serif">
-              Our Reviews
-            </h1>
-            <div className="flex items-center justify-center gap-1 mt-2">
-              <span className="text-xs font-bold text-gray-800">EXCELLENT</span>
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400" />
-                ))}
-              </div>
-              <span className="text-xs text-gray-500">Based on Google Reviews</span>
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-12 text-center space-y-3">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-rose-800">
+              Real Reviews · Real Nail Girlies
+            </span>
+            <h2 className="font-serif text-3xl sm:text-5xl leading-tight text-gray-950">
+              Loved by <span className="italic text-rose-700">babes</span> everywhere
+            </h2>
+
+            <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-rose-200/80 bg-white/80 px-6 py-2.5 shadow-sm backdrop-blur-md">
+              <span className="font-serif text-2xl font-bold text-gray-950">5.0</span>
+              <Stars />
+              <span className="h-4 w-px bg-gray-300" />
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+                <GoogleG /> Google Reviews
+              </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {reviews.slice(0, 3).map((rev: { text: string; author: string; date: string }, idx: number) => (
-              <div
+          {/* Cards */}
+          <div className="-mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-6 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0 scrollbar-none">
+            {reviews.slice(0, 3).map((rev, idx) => (
+              <article
                 key={idx}
-                className="bg-white p-6 rounded-xl border border-[#eedad7] shadow-sm flex flex-col justify-between"
+                className={`group relative flex min-w-[82%] snap-center flex-col justify-between rounded-3xl border border-rose-100/90 bg-white/85 p-6 sm:p-7 shadow-sm backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-w-[60%] md:min-w-0 ${
+                  idx === 1 ? "md:-translate-y-3 md:hover:-translate-y-4" : ""
+                }`}
               >
-                <div>
-                  <div className="flex items-center gap-1 text-amber-400 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed italic">
-                    &ldquo;{rev.text}&rdquo;
+                <span className="pointer-events-none absolute right-6 top-3 font-serif text-7xl leading-none text-rose-200/60 select-none">
+                  &rdquo;
+                </span>
+
+                <div className="relative z-10">
+                  <Stars size="w-3.5 h-3.5" />
+                  <p className="mt-4 text-[14px] sm:text-[15px] leading-relaxed text-gray-800">
+                    {rev.text}
                   </p>
                 </div>
-                <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs">
-                  <span className="font-bold text-gray-900">{rev.author}</span>
-                  <span className="text-gray-400">{rev.date}</span>
+
+                <div className="relative z-10 mt-6 flex items-center gap-3 border-t border-rose-100 pt-4">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${
+                      AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]
+                    } text-sm font-bold text-white shadow-xs`}
+                  >
+                    {rev.author.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-950">
+                      {rev.author}
+                    </p>
+                    <p className="flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                      <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" /> Verified buyer
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-gray-400 font-medium">{rev.date}</span>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Mobile Video 3: Between Reviews & Shop US IRL */}
-      <div className="md:hidden w-full overflow-hidden bg-black relative aspect-[9/16] max-h-[540px]">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          controls={false}
-          disablePictureInPicture
-          disableRemotePlayback
-          poster="/images/IMG_7100.webp"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-        >
-          <source src="/videos/1K34PRO8E_DMCL0D.mp4" type="video/mp4" />
-        </video>
-      </div>
-
-      {/* 7. SECTION: SHOP US IRL - Seamless Harmonious Split */}
-      <section className="relative w-full overflow-hidden bg-[#faf1ec] border-t border-[#eedcd2]">
-        <div className="grid grid-cols-1 md:grid-cols-2 items-stretch min-h-[420px] sm:min-h-[500px] lg:min-h-[580px]">
-          {/* Left 50%: Image with smooth seamless fade on the right edge */}
-          <div className="relative w-full h-[360px] sm:h-[460px] md:h-full min-h-[360px] md:min-h-full overflow-hidden">
+      {/* 6. SECTION: SHOP US IRL / URL - Seamless Harmonious Split */}
+      <section className="relative w-full overflow-hidden bg-[#faf1ec] border-t border-rose-100/80">
+        <div className="grid grid-cols-1 md:grid-cols-2 items-stretch min-h-[420px] sm:min-h-[480px] lg:min-h-[540px]">
+          {/* Left Column Image */}
+          <div className="relative w-full h-[360px] sm:h-[440px] md:h-full min-h-[360px] md:min-h-full overflow-hidden">
             <Image
-              src="/images/shop-irl-bg.webp"
-              alt="Shop US IRL"
+              src="/images/shop-url-bg.webp"
+              alt="Shop US IRL & URL"
               fill
               priority
               quality={100}
               unoptimized
               className="object-cover object-center"
             />
-            {/* Seamless gradient fade blending the image into the right background tone */}
             <div className="hidden md:block absolute inset-y-0 right-0 w-36 lg:w-52 bg-gradient-to-r from-transparent to-[#faf1ec] pointer-events-none" />
             <div className="md:hidden absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-[#faf1ec] pointer-events-none" />
           </div>
 
-          {/* Right 50%: Harmonious Matching Tone with Title & Button */}
-          <div className="relative flex flex-col items-center justify-center text-center px-6 sm:px-12 lg:px-16 py-12 sm:py-16 space-y-5 sm:space-y-6 bg-[#faf1ec]">
-            <div className="relative z-10 space-y-3 sm:space-y-4 max-w-md">
-
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold uppercase tracking-tight text-neutral-900 font-sans leading-tight">
+          {/* Right Column Content */}
+          <div className="relative flex flex-col items-center justify-center text-center px-6 sm:px-12 lg:px-16 py-12 sm:py-16 space-y-5 bg-[#faf1ec]">
+            <div className="relative z-10 space-y-4 max-w-md">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-rose-800 flex items-center justify-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-rose-600" />
+                Visit Our Studio or Shop Online
+              </span>
+              
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight text-neutral-950 font-serif leading-tight">
                 SHOP US URL
               </h2>
-              <div className="pt-3">
+
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-normal">
+                Visit our Kissimmee Florida studio or order online with fast worldwide shipping.
+              </p>
+
+              <div className="pt-2">
                 <a
                   href="https://www.google.com/maps/place/3168+Bill+Beck+Blvd,+Kissimmee,+FL+34744,+Hoa+K%E1%BB%B3/@28.3421851,-81.384924,96m/data=!3m1!1e3!4m6!3m5!1s0x88dd86f7f805bafd:0x719187b51bbcb7ff!8m2!3d28.3423066!4d-81.3845875!16s%2Fg%2F11bw40bzvw!5m1!1e1?entry=ttu&g_ep=EgoyMDI2MDkyMS4wIKXMDSoASAFQAw%3D%3D"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block px-9 py-3.5 bg-black hover:bg-neutral-800 text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md hover:shadow-lg hover:scale-102 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-9 py-3.5 bg-black hover:bg-neutral-800 text-white text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl transition-all shadow-md hover:shadow-xl hover:scale-102 cursor-pointer"
                 >
-                  FIND US
+                  <MapPin className="w-4 h-4" />
+                  <span>FIND US ON MAP</span>
                 </a>
               </div>
             </div>
           </div>
         </div>
       </section>
+
     </div>
   );
 }

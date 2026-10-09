@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ArrowRight } from "lucide-react";
-import { PageDecorations } from "@/components/PageDecorations";
+import { CheckCircle2, ArrowRight, Building2 } from "lucide-react";
+
+const focusRing =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9776c]";
 
 export default function WholesaleSignupPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -82,63 +84,101 @@ export default function WholesaleSignupPage() {
   };
 
   return (
-    <div className="relative bg-white min-h-screen py-16 sm:py-24 overflow-hidden">
-      {/* Background Motifs */}
-      <PageDecorations preset="wholesale" />
+    <div
+      className="relative min-h-screen py-8 sm:py-12 overflow-hidden text-gray-900"
+      style={{
+        background: `
+          radial-gradient(ellipse 60% 40% at 12% 15%, rgba(246, 201, 193, 0.42) 0%, transparent 70%),
+          radial-gradient(ellipse 55% 45% at 88% 22%, rgba(250, 236, 233, 0.75) 0%, transparent 70%),
+          radial-gradient(ellipse 65% 50% at 30% 55%, rgba(251, 227, 222, 0.50) 0%, transparent 70%),
+          radial-gradient(ellipse 60% 45% at 75% 70%, rgba(246, 217, 210, 0.38) 0%, transparent 70%),
+          radial-gradient(ellipse 70% 40% at 50% 90%, rgba(253, 244, 241, 0.60) 0%, transparent 70%),
+          linear-gradient(180deg, #faece9 0%, #fdf4f1 35%, #ffffff 100%)
+        `,
+      }}
+    >
+      {/* Diffused ambient blobs */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 -left-20 w-[500px] h-[500px] rounded-full bg-[#f6c9c1]/40 blur-[100px]" />
+        <div className="absolute top-20 -right-32 w-[550px] h-[550px] rounded-full bg-[#faece9]/80 blur-[110px]" />
+        <div className="absolute top-[35%] -left-36 w-[520px] h-[520px] rounded-full bg-[#fbe3de]/55 blur-[120px]" />
+        <div className="absolute top-[55%] left-1/2 -translate-x-1/2 w-[650px] h-[550px] rounded-full bg-[#fdf4f1]/70 blur-[130px]" />
+        <div className="absolute top-[75%] -right-28 w-[520px] h-[520px] rounded-full bg-[#f8dfd8]/50 blur-[110px]" />
+      </div>
 
-      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10">
+        {/* Breadcrumb Navigation */}
+        <nav aria-label="Breadcrumb" className="mb-2">
+          <ol className="flex items-center gap-1.5 text-[11px] font-semibold uppercase text-[#c9776c]">
+            <li>
+              <Link href="/" className={`hover:text-[#b8897a] transition-colors ${focusRing}`}>
+                Home
+              </Link>
+            </li>
+            <span className="text-[#c9776c]/60">/</span>
+            <li className="text-gray-700" aria-current="page">
+              Wholesale Application
+            </li>
+          </ol>
+        </nav>
+
         {/* Header */}
-        <div className="text-center space-y-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-            Partner with X-ON
-          </span>
-          <h1 className="text-3xl sm:text-5xl font-extrabold uppercase tracking-tight text-gray-950 font-serif">
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <h1 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-semibold text-gray-900 tracking-tight">
             Wholesale Account Application
           </h1>
-          <p className="text-sm text-gray-600 leading-relaxed max-w-xl mx-auto">
-            Become an official retailer or salon partner of X-ON&apos;s handmade press-on nails and professional nail essentials.
+          <div className="mx-auto h-px w-12 bg-rose-300" />
+          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed max-w-xl mx-auto">
+            Become an official partner of X-ON&apos;s handcrafted press-on nails, patented Cold Gel Glue technology, and pro essentials.
           </p>
         </div>
 
-        {/* Benefits banner */}
-        <div className="bg-neutral-50 rounded-2xl p-6 border border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <div>
-            <span className="text-xl font-bold text-gray-950">40–60%</span>
-            <p className="text-xs text-gray-500 mt-1">Wholesale Margins</p>
+        {/* Benefits Banner (Tối ưu cho cả Mobile & Desktop) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="rounded-2xl border border-[#eedad7] bg-white/80 backdrop-blur-xs p-4 sm:p-5 text-center shadow-2xs">
+            <span className="text-xl sm:text-2xl font-serif font-bold text-gray-900 block">40–60%</span>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#c9776c] mt-1">Wholesale Margins</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">High profit return per set</p>
           </div>
-          <div>
-            <span className="text-xl font-bold text-gray-950">Low MOQ</span>
-            <p className="text-xs text-gray-500 mt-1">Flexible Starter Kits</p>
+          <div className="rounded-2xl border border-[#eedad7] bg-white/80 backdrop-blur-xs p-4 sm:p-5 text-center shadow-2xs">
+            <span className="text-xl sm:text-2xl font-serif font-bold text-gray-900 block">Low MOQ</span>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#c9776c] mt-1">Flexible Starter Kits</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">Custom mix &amp; match packs</p>
           </div>
-          <div>
-            <span className="text-xl font-bold text-gray-950">Fast Shipping</span>
-            <p className="text-xs text-gray-500 mt-1">US-Based Stock</p>
+          <div className="rounded-2xl border border-[#eedad7] bg-white/80 backdrop-blur-xs p-4 sm:p-5 text-center shadow-2xs">
+            <span className="text-xl sm:text-2xl font-serif font-bold text-gray-900 block">US Stock</span>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#c9776c] mt-1">Prompt Dispatch</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">Shipped from Florida studio</p>
           </div>
         </div>
 
-        {/* Form Container */}
-        <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
+        {/* Form Container (Mobile Optimized) */}
+        <div className="rounded-3xl border border-[#eedad7] bg-white/95 backdrop-blur-xs p-6 sm:p-10 shadow-xs">
           {submitted ? (
-            <div className="text-center py-12 space-y-4">
-              <CheckCircle2 className="w-14 h-14 text-emerald-600 mx-auto" />
-              <h3 className="text-xl font-bold uppercase text-gray-950">
-                Application Submitted!
+            <div className="text-center py-10 sm:py-14 space-y-4">
+              <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200">
+                <CheckCircle2 className="w-9 h-9" />
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-gray-900">
+                Application Received!
               </h3>
-              <p className="text-sm text-gray-600 max-w-md mx-auto">
-                Thank you for applying for an X-ON wholesale account. Our wholesale accounts manager will review your business credentials and contact you within 1–2 business days.
+              <p className="text-xs sm:text-sm text-gray-600 max-w-md mx-auto leading-relaxed">
+                Thank you for applying to partner with X-ON. Our wholesale accounts manager will review your credentials and contact you via email within 1–2 business days.
               </p>
-              <Link
-                href="/shop"
-                className="inline-block mt-4 px-6 py-2.5 bg-black text-white text-xs uppercase font-semibold tracking-wider rounded-full hover:bg-neutral-800 transition-colors"
-              >
-                Return to Shop
-              </Link>
+              <div className="pt-4">
+                <Link
+                  href="/shop"
+                  className={`inline-flex items-center gap-2 rounded-full bg-gray-900 px-8 py-3 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-black ${focusRing}`}
+                >
+                  Return to Shop <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                     Contact Name *
                   </label>
                   <input
@@ -152,11 +192,11 @@ export default function WholesaleSignupPage() {
                       }
                     }}
                     placeholder="Full Name"
-                    className={`w-full px-4 py-2.5 text-xs border rounded-md focus:outline-hidden ${
+                    className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border bg-white transition-colors ${
                       fieldErrors.contactName
-                        ? "border-rose-500 bg-rose-50/30 focus:border-rose-600"
-                        : "border-gray-200 focus:border-black"
-                    }`}
+                        ? "border-rose-500 bg-rose-50/30"
+                        : "border-[#eedad7] hover:border-gray-400"
+                    } ${focusRing}`}
                   />
                   {fieldErrors.contactName && (
                     <span className="text-[11px] text-rose-600 font-medium mt-1 block">
@@ -164,8 +204,9 @@ export default function WholesaleSignupPage() {
                     </span>
                   )}
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                     Business Name *
                   </label>
                   <input
@@ -179,11 +220,11 @@ export default function WholesaleSignupPage() {
                       }
                     }}
                     placeholder="Boutique / Salon Name"
-                    className={`w-full px-4 py-2.5 text-xs border rounded-md focus:outline-hidden ${
+                    className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border bg-white transition-colors ${
                       fieldErrors.businessName
-                        ? "border-rose-500 bg-rose-50/30 focus:border-rose-600"
-                        : "border-gray-200 focus:border-black"
-                    }`}
+                        ? "border-rose-500 bg-rose-50/30"
+                        : "border-[#eedad7] hover:border-gray-400"
+                    } ${focusRing}`}
                   />
                   {fieldErrors.businessName && (
                     <span className="text-[11px] text-rose-600 font-medium mt-1 block">
@@ -195,7 +236,7 @@ export default function WholesaleSignupPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                     Business Email *
                   </label>
                   <input
@@ -209,11 +250,11 @@ export default function WholesaleSignupPage() {
                       }
                     }}
                     placeholder="orders@business.com"
-                    className={`w-full px-4 py-2.5 text-xs border rounded-md focus:outline-hidden ${
+                    className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border bg-white transition-colors ${
                       fieldErrors.email
-                        ? "border-rose-500 bg-rose-50/30 focus:border-rose-600"
-                        : "border-gray-200 focus:border-black"
-                    }`}
+                        ? "border-rose-500 bg-rose-50/30"
+                        : "border-[#eedad7] hover:border-gray-400"
+                    } ${focusRing}`}
                   />
                   {fieldErrors.email && (
                     <span className="text-[11px] text-rose-600 font-medium mt-1 block">
@@ -221,8 +262,9 @@ export default function WholesaleSignupPage() {
                     </span>
                   )}
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                     Phone Number *
                   </label>
                   <input
@@ -236,11 +278,11 @@ export default function WholesaleSignupPage() {
                       }
                     }}
                     placeholder="(555) 000-0000"
-                    className={`w-full px-4 py-2.5 text-xs border rounded-md focus:outline-hidden ${
+                    className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border bg-white transition-colors ${
                       fieldErrors.phone
-                        ? "border-rose-500 bg-rose-50/30 focus:border-rose-600"
-                        : "border-gray-200 focus:border-black"
-                    }`}
+                        ? "border-rose-500 bg-rose-50/30"
+                        : "border-[#eedad7] hover:border-gray-400"
+                    } ${focusRing}`}
                   />
                   {fieldErrors.phone && (
                     <span className="text-[11px] text-rose-600 font-medium mt-1 block">
@@ -252,7 +294,7 @@ export default function WholesaleSignupPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                     Website or Social Handle
                   </label>
                   <input
@@ -260,11 +302,12 @@ export default function WholesaleSignupPage() {
                     value={formData.website}
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                     placeholder="instagram.com/yoursalon"
-                    className="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-md focus:outline-hidden focus:border-black"
+                    className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#eedad7] bg-white hover:border-gray-400 transition-colors ${focusRing}`}
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                     Tax ID / Reseller Permit #
                   </label>
                   <input
@@ -272,26 +315,26 @@ export default function WholesaleSignupPage() {
                     value={formData.taxId}
                     onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
                     placeholder="Tax ID Number"
-                    className="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-md focus:outline-hidden focus:border-black"
+                    className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#eedad7] bg-white hover:border-gray-400 transition-colors ${focusRing}`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                   Business Details &amp; Estimated Volume
                 </label>
                 <textarea
                   rows={4}
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  placeholder="Tell us about your store, client base, and the product lines you are interested in..."
-                  className="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-md focus:outline-hidden focus:border-black resize-y"
+                  placeholder="Tell us about your boutique, salon clients, and the nail collections you're interested in stocking..."
+                  className={`w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#eedad7] bg-white hover:border-gray-400 transition-colors resize-y ${focusRing}`}
                 />
               </div>
 
               {errorMessage && (
-                <p className="text-xs text-rose-600 bg-rose-50 p-3 rounded-lg border border-rose-200">
+                <p className="text-xs text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">
                   {errorMessage}
                 </p>
               )}
@@ -299,12 +342,12 @@ export default function WholesaleSignupPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3.5 bg-black hover:bg-neutral-800 text-white font-semibold text-xs uppercase tracking-widest rounded-md shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                className={`w-full py-3.5 rounded-full bg-gray-900 hover:bg-black text-white font-bold text-xs uppercase tracking-wider transition-all shadow-sm hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer ${focusRing}`}
               >
                 {isSubmitting && (
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 )}
-                <span>{isSubmitting ? "Submitting..." : "Submit Wholesale Application"}</span>
+                <span>{isSubmitting ? "Submitting Application..." : "Submit Wholesale Application"}</span>
               </button>
             </form>
           )}

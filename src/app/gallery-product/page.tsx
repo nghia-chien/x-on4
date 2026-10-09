@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, ChevronRight, X, ZoomIn } from "lucide-react";
 import galleryItems from "@/data/gallery-product.json";
-import { PageDecorations } from "@/components/PageDecorations";
 
 export default function GalleryProductPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,7 +28,6 @@ export default function GalleryProductPage() {
   return (
     <div className="relative bg-white min-h-screen overflow-hidden">
       {/* Background Motifs */}
-      <PageDecorations preset="gallery" />
 
       {/* Top Full-width Banner with Top-Left Luxury Overlay Text */}
       <div className="relative w-full overflow-hidden bg-[#f7f3ee] min-h-[420px] sm:min-h-[480px] md:min-h-[520px] lg:min-h-[560px] flex items-center">

@@ -6,7 +6,6 @@ export { StoreShell } from "./StoreShell";
 
 // Store & Product Components
 export { ProductCard } from "./ProductCard";
-export { PageDecorations } from "./PageDecorations";
 export { FormValidationEnforcer } from "./FormValidationEnforcer";
 
 // Admin Components

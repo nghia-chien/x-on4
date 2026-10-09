@@ -16,7 +16,6 @@ import {
   TrendingUp,
   Clock,
   ArrowRight,
-  Sparkles,
 } from "lucide-react";
 
 interface SearchProductItem {
@@ -26,6 +25,7 @@ interface SearchProductItem {
   slug: string;
   price: number | string;
   salePrice?: number | null;
+  image?: string;
   thumbnail?: string;
   images?: string[];
   category?: string;
@@ -55,20 +55,44 @@ export function Header() {
   const [isSearching, setIsSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [scrollY, setScrollY] = useState(0);
+  const [isShopMenuOpen, setIsShopMenuOpen] = useState(false);
+  const isShopBlockedRef = useRef(false);
+  const shopBlockTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { openCart, totalCount, subtotal } = useCart();
 
-  // Load recent searches from localStorage on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("xon_recent_searches");
-      if (saved) {
-        setRecentSearches(JSON.parse(saved));
+    setIsShopMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("#shop-nav-item")) {
+        setIsShopMenuOpen(false);
+        isShopBlockedRef.current = false;
       }
-    } catch {
-      // ignore
-    }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (searchOpen) {
+      // Chỉ autofocus modal input trên mobile (desktop dùng inline input)
+      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 50);
+      }
+    } else {
+      // Chỉ clear query trên mobile (desktop giữ nguyên)
+      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+        setSearchQuery("");
+        setSearchResults([]);
+      }
+    }
+  }, [searchOpen]);
 
   const saveRecentSearch = (query: string) => {
     const trimmed = query.trim();
@@ -189,11 +213,30 @@ export function Header() {
     }
   };
 
+  const handleShopMouseEnter = () => {
+    if (isShopBlockedRef.current) return;
+    setIsShopMenuOpen(true);
+  };
+
+  const handleShopMouseLeave = () => {
+    isShopBlockedRef.current = false;
+    setIsShopMenuOpen(false);
+  };
+
   const handleLinkClick = () => {
+    setIsShopMenuOpen(false);
+    isShopBlockedRef.current = true;
+    if (shopBlockTimeoutRef.current) {
+      clearTimeout(shopBlockTimeoutRef.current);
+    }
+    shopBlockTimeoutRef.current = setTimeout(() => {
+      isShopBlockedRef.current = false;
+    }, 400);
     scrollToTop();
   };
 
   const handleDrawerLinkClick = () => {
+    setIsShopMenuOpen(false);
     setMobileOpen(false);
     scrollToTop();
   };
@@ -201,7 +244,47 @@ export function Header() {
   // Scroll progress from 0 (top of page) to 1 (scrolled >= 280px for slower, smoother shrinking)
   const progress = Math.min(1, Math.max(0, scrollY / 280));
 
-  const renderActions = (showSubtotal = true) => (
+  // const renderActions = (showSubtotal = true) => (
+  //   <div className="flex items-center space-x-2 sm:space-x-4 text-gray-800">
+  //     <Link
+  //       href="/shop"
+  //       onClick={handleLinkClick}
+  //       className="p-1.5 hover:text-rose-700 transition-colors hidden sm:block"
+  //       title="Wishlist"
+  //     >
+  //       <Heart className="w-5 h-5 stroke-[1.5]" />
+  //     </Link>
+
+  //     <button
+  //       onClick={() => setSearchOpen(!searchOpen)}
+  //       className="p-1.5 hover:text-rose-700 transition-colors cursor-pointer"
+  //       aria-label="Search"
+  //     >
+  //       <Search className="w-5 h-5 stroke-[1.5]" />
+  //     </button>
+
+  //     <button
+  //       onClick={openCart}
+  //       className="p-1.5 hover:text-rose-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+  //       aria-label="Cart"
+  //     >
+  //       <div className="relative">
+  //         <ShoppingBag className="w-5 h-5 stroke-[1.5]" />
+  //         {totalCount > 0 && (
+  //           <span className="absolute -top-1.5 -right-1.5 bg-black text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+  //             {totalCount}
+  //           </span>
+  //         )}
+  //       </div>
+  //       {showSubtotal && (
+  //         <span className="hidden md:inline-block text-xs font-semibold text-gray-800">
+  //           ${subtotal.toFixed(2)}
+  //         </span>
+  //       )}
+  //     </button>
+  //   </div>
+  // );
+  const renderActions = (showSubtotal = true, hideSearch = false) => (
     <div className="flex items-center space-x-2 sm:space-x-4 text-gray-800">
       <Link
         href="/shop"
@@ -212,13 +295,16 @@ export function Header() {
         <Heart className="w-5 h-5 stroke-[1.5]" />
       </Link>
 
-      <button
-        onClick={() => setSearchOpen(!searchOpen)}
-        className="p-1.5 hover:text-rose-700 transition-colors cursor-pointer"
-        aria-label="Search"
-      >
-        <Search className="w-5 h-5 stroke-[1.5]" />
-      </button>
+      {/* Chỉ hiện nút search icon khi KHÔNG hideSearch (mobile) */}
+      {!hideSearch && (
+        <button
+          onClick={() => setSearchOpen(!searchOpen)}
+          className="p-1.5 hover:text-rose-700 transition-colors cursor-pointer"
+          aria-label="Search"
+        >
+          <Search className="w-5 h-5 stroke-[1.5]" />
+        </button>
+      )}
 
       <button
         onClick={openCart}
@@ -241,7 +327,6 @@ export function Header() {
       </button>
     </div>
   );
-
   const isHome = pathname === "/";
   const isShop =
     pathname === "/shop" ||
@@ -267,21 +352,19 @@ export function Header() {
     pathname === "/contact-us" || pathname.startsWith("/contact");
 
   const getLinkClass = (isActive: boolean) =>
-    `py-2.5 whitespace-nowrap block transition-colors duration-150 cursor-pointer ${
-      isActive
-        ? "text-rose-700 font-bold"
-        : "text-neutral-800 hover:text-rose-700 font-bold"
+    `py-2.5 whitespace-nowrap block transition-colors duration-150 cursor-pointer ${isActive
+      ? "text-rose-700 font-bold"
+      : "text-neutral-800 hover:text-rose-700 font-bold"
     }`;
 
   const getShopClass = (isActive: boolean) =>
-    `py-2.5 transition-colors duration-150 flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-      isActive
-        ? "text-rose-700 font-bold"
-        : "text-neutral-800 hover:text-rose-700 font-bold"
+    `py-2.5 transition-colors duration-150 flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${isActive
+      ? "text-rose-700 font-bold"
+      : "text-neutral-800 hover:text-rose-700 font-bold"
     }`;
 
   const renderNavLinks = () => (
-    <ul className="flex items-center gap-3.5 xl:gap-6 2xl:gap-8 text-[12px] xl:text-[13px] uppercase tracking-[0.1em] xl:tracking-[0.14em] text-neutral-800 whitespace-nowrap shrink-0">
+    <ul className="flex items-center justify-between w-full gap-3.5 xl:gap-6 2xl:gap-8 text-[12px] xl:text-[13px] uppercase tracking-[0.1em] xl:tracking-[0.14em] text-neutral-800 whitespace-nowrap">
       <li className="shrink-0">
         <Link
           href="/"
@@ -293,23 +376,54 @@ export function Header() {
       </li>
 
       {/* Shop Mega Menu */}
-      <li className="group py-2.5 shrink-0">
+      <li
+        id="shop-nav-item"
+        className="py-2.5 shrink-0"
+        onMouseEnter={handleShopMouseEnter}
+        onMouseLeave={handleShopMouseLeave}
+      >
         <Link
           href="/shop"
-          onClick={(e) => {
-            e.preventDefault();
-            window.location.href = "/shop";
-          }}
+          onClick={handleLinkClick}
           className={getShopClass(isShop)}
         >
-          SHOP <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-200 stroke-[2]" />
+          SHOP <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 stroke-[2] ${isShopMenuOpen ? "rotate-180" : ""}`} />
         </Link>
 
         {/* Mega Menu Dropdown */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 w-[860px] max-w-[95vw] bg-white shadow-2xl rounded-2xl border border-gray-100 p-6 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-          <div className="grid grid-cols-4 gap-6">
-            {/* Col 1: Product Type */}
-            <div className="space-y-2">
+        <div
+          className={`absolute top-full left-0 right-0 w-full bg-[#faece9]/90 backdrop-blur-md shadow-2xl border-t border-gray-100 transition-all duration-200 z-50 ${
+            isShopMenuOpen
+              ? "opacity-100 visible pointer-events-auto"
+              : "opacity-0 invisible pointer-events-none"
+          }`}
+        >
+          {/* Container bên trong để nội dung không bị tràn sát mép */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <div className="grid grid-cols-12 gap-4">
+
+              {/* ===== CỘT 1: LOGO SHOP (3/12) ===== */}
+              <div className="col-span-3">
+                <Link
+                  href="/shop"
+                  onClick={handleLinkClick}
+                  className="group/logo relative block h-full min-h-[300px] rounded-xl overflow-hidden bg-gradient-to-br from-rose-50 via-neutral-50 to-rose-100/50 border border-neutral-100"
+                >
+                  <Image
+                    src="/images/logo-xon.webp"
+                    alt="X-ON Shop"
+                    fill
+                    sizes="140px"
+                    className="object-contain p-6 group-hover/logo:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/80 text-white text-[10px] font-bold uppercase tracking-widest rounded-sm whitespace-nowrap">
+                    Shop Now
+                  </div>
+                </Link>
+              </div>
+
+              {/* ===== CỘT 2: UL LIST (3/12) ===== */}
+              <div className="col-span-3 rounded-xl border border-neutral-100 bg-neutral-50/40 p-4">
               <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-1.5">
                 Product Type
               </h4>
@@ -393,72 +507,91 @@ export function Header() {
                   </Link>
                 </li>
               </ul>
-            </div>
 
-            {/* Col 2: Card Bundles */}
-            <div className="space-y-2">
-              <Link
-                href="/bundle-and-save"
-                onClick={handleLinkClick}
-                className="group/card block relative aspect-3/4 rounded-lg overflow-hidden bg-neutral-100"
-              >
-                <Image
-                  src="/images/IMG_7098.webp"
-                  alt="Bundles"
-                  fill
-                  sizes="250px"
-                  className="object-cover group-hover/card:scale-105 transition-transform"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-3">
-                  <span className="text-white text-xs font-bold uppercase tracking-wider">
-                    Bundles
-                  </span>
-                </div>
-              </Link>
-            </div>
+              </div>
+              
 
-            {/* Col 3: Card Y2K */}
-            <div className="space-y-2">
-              <Link
-                href="/product-category/design-theme/y2k"
-                onClick={handleLinkClick}
-                className="group/card block relative aspect-3/4 rounded-lg overflow-hidden bg-neutral-100"
-              >
-                <Image
-                  src="/images/IMG_7101.webp"
-                  alt="Y2K"
-                  fill
-                  sizes="250px"
-                  className="object-cover group-hover/card:scale-105 transition-transform"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-3">
-                  <span className="text-white text-xs font-bold uppercase tracking-wider">
-                    Y2K
-                  </span>
-                </div>
-              </Link>
-            </div>
+              {/* ===== CỘT 3: BENTO (6/12) ===== */}
+              <div className="col-span-6 flex flex-col gap-3">
 
-            {/* Col 4: Card Best seller */}
-            <div className="space-y-2">
-              <Link
-                href="/product-category/product-type/best-seller"
-                onClick={handleLinkClick}
-                className="group/card block relative aspect-3/4 rounded-lg overflow-hidden bg-neutral-100"
-              >
-                <Image
-                  src="/images/IMG_7105.webp"
-                  alt="Best seller"
-                  fill
-                  sizes="250px"
-                  className="object-cover group-hover/card:scale-105 transition-transform"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-3">
-                  <span className="text-white text-xs font-bold uppercase tracking-wider">
-                    Best Seller
-                  </span>
+                {/* ẢNH NGANG */}
+                <Link
+                  href="/bundle-and-save"
+                  onClick={handleLinkClick}
+                  className="group/card relative block aspect-[16/6] rounded-xl overflow-hidden bg-neutral-100"
+                >
+                  <Image
+                    src="/images/IMG_7098.webp"
+                    alt="Bundles & Save"
+                    fill
+                    sizes="600px"
+                    className="object-cover group-hover/card:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex items-center p-5">
+                    <div>
+                      <span className="text-white/70 text-[10px] uppercase tracking-[0.2em] block mb-0.5">
+                        Featured
+                      </span>
+                      <h3 className="text-white text-lg font-bold uppercase tracking-wider">
+                        Bundles &amp; Save
+                      </h3>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* 2 ẢNH DỌC */}
+                <div className="grid grid-cols-2 gap-3 flex-1">
+                  <Link
+                    href="/product-category/design-theme/y2k"
+                    onClick={handleLinkClick}
+                    className="group/card relative block rounded-xl overflow-hidden bg-neutral-100 min-h-[180px]"
+                  >
+                    <Image
+                      src="/images/IMG_7101.webp"
+                      alt="Y2K Collection"
+                      fill
+                      sizes="300px"
+                      className="object-cover group-hover/card:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-4">
+                      <div>
+                        <span className="text-white/70 text-[10px] uppercase tracking-[0.2em] block mb-0.5">
+                          Design
+                        </span>
+                        <h3 className="text-white text-sm font-bold uppercase tracking-wider">
+                          Y2K Collection
+                        </h3>
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/product-category/product-type/best-seller"
+                    onClick={handleLinkClick}
+                    className="group/card relative block rounded-xl overflow-hidden bg-neutral-100 min-h-[180px]"
+                  >
+                    <Image
+                      src="/images/IMG_7105.webp"
+                      alt="Best Sellers"
+                      fill
+                      sizes="300px"
+                      className="object-cover group-hover/card:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-4">
+                      <div>
+                        <span className="text-white/70 text-[10px] uppercase tracking-[0.2em] block mb-0.5">
+                          Popular
+                        </span>
+                        <h3 className="text-white text-sm font-bold uppercase tracking-wider">
+                          Best Sellers
+                        </h3>
+                      </div>
+                    </div>
+                  </Link>
                 </div>
-              </Link>
+
+              </div>
+
             </div>
           </div>
         </div>
@@ -568,49 +701,57 @@ export function Header() {
         </div>
 
         {/* Desktop Balanced Navigation Bar */}
-        <nav className="hidden lg:block bg-white relative">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-11 xl:h-12">
-              {/* Left spacer - symmetrically balances right actions so menu is perfectly centered */}
-              <div className="flex-1 flex justify-start" />
+<nav className="hidden lg:block bg-white relative">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="flex items-center justify-end h-11 xl:h-12 gap-4">
 
-              {/* Center: Navigation Links (shifted slightly to the left) */}
-              <div className="flex items-center justify-center shrink-0 -translate-x-6 xl:-translate-x-10">
-                {renderNavLinks()}
-              </div>
+      {/* Nav Links */}
+      <div className="flex items-center shrink-0">
+        {renderNavLinks()}
+      </div>
 
-              {/* Right: Action Icons */}
-              <div className="flex-1 flex items-center justify-end">
-                {renderActions(true)}
-              </div>
-            </div>
-          </div>
-        </nav>
+      {/* Search + Actions */}
+      <div className="flex items-center gap-3 shrink-0">
+        {/* Search Input Pill */}
+        <div className="relative w-44 xl:w-56">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (!searchOpen) setSearchOpen(true);
+            }}
+            onFocus={() => setSearchOpen(true)}
+            placeholder="Search for nails..."
+            className="w-full pl-10 pr-4 py-2 bg-neutral-100 hover:bg-neutral-200/70 focus:bg-white border border-transparent focus:border-neutral-300 rounded-full text-xs text-gray-900 placeholder:text-neutral-400 focus:outline-none transition-colors"
+          />
+        </div>
+
+        {renderActions(true, true)}
+      </div>
+
+    </div>
+  </div>
+</nav>
 
         {/* Dropdown Full-Width Search Bar Attached Under Header */}
         {searchOpen && (
           <>
-            {/* Transparent click-outside backdrop (does not blur or dim header) */}
-            <div
-              className="fixed inset-0 z-30 cursor-default"
-              onClick={() => setSearchOpen(false)}
-            />
+            <div className="fixed inset-0 z-30 cursor-default" onClick={() => setSearchOpen(false)} />
 
-            {/* Full-width Search Bar Container - Sharp & Compact */}
             <div className="absolute top-full left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-md transition-all animate-in slide-in-from-top-2 duration-150">
               <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3">
-                {/* Search Form Row */}
-                <form
-                  onSubmit={(e) => handleSearchSubmit(e)}
-                  className="relative flex items-center gap-2"
-                >
-                  <div className="relative flex-1 flex items-center bg-white border border-neutral-300 focus-within:border-black rounded-none px-3 py-1.5 sm:py-2 transition-colors">
+                        {/* Search Form Row */}
+                        <form onSubmit={(e) => handleSearchSubmit(e)} className="relative flex items-center gap-2">
+
+                  {/* INPUT — ẩn trên desktop (lg:hidden), vì input đã ở nav bar */}
+                  <div className="relative flex-1 flex items-center bg-white border border-neutral-300 focus-within:border-black rounded-none px-3 py-1.5 sm:py-2 transition-colors lg:hidden">
                     {isSearching ? (
                       <Loader2 className="w-4 h-4 text-rose-600 animate-spin shrink-0" />
                     ) : (
                       <Search className="w-4 h-4 text-gray-500 shrink-0" />
                     )}
-
                     <input
                       ref={searchInputRef}
                       type="text"
@@ -619,39 +760,21 @@ export function Header() {
                       placeholder="Search products, shapes (Almond, Coffin), themes (3D, Y2K)..."
                       className="w-full pl-2.5 pr-6 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-hidden bg-transparent"
                     />
-
                     {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery("");
-                          searchInputRef.current?.focus();
-                        }}
-                        className="p-1 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer mr-0.5"
-                        title="Clear text"
-                      >
+                      <button type="button" onClick={() => setSearchQuery("")} className="...">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
 
-                  {/* Search Submit Button - Square & Compact */}
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 sm:py-2 bg-black hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-wider rounded-none transition-colors cursor-pointer shrink-0 hidden sm:inline-flex items-center gap-1.5"
-                  >
+                  {/* Search submit button — vẫn hiện nhưng chỉ để submit form khi Enter */}
+                  <button type="submit" className="... lg:hidden">
                     <span>Search</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
-                  {/* Close Button */}
-                  <button
-                    type="button"
-                    onClick={() => setSearchOpen(false)}
-                    className="p-2 text-gray-500 hover:text-black hover:bg-gray-100 rounded-none transition-colors cursor-pointer shrink-0"
-                    title="Close search"
-                    aria-label="Close search"
-                  >
+                  {/* Close button */}
+                  <button type="button" onClick={() => setSearchOpen(false)} className="...">
                     <X className="w-4 h-4" />
                   </button>
                 </form>
@@ -733,14 +856,14 @@ export function Header() {
                             const img =
                               item.thumbnail ||
                               (Array.isArray(item.images) && item.images[0]) ||
-                              (item as any).image ||
+                              item.image ||
                               "/images/IMG_7098.webp";
                             const priceVal =
                               typeof item.price === "number"
                                 ? `$${item.price.toFixed(2)}`
                                 : String(item.price).startsWith("$")
-                                ? item.price
-                                : `$${item.price}`;
+                                  ? item.price
+                                  : `$${item.price}`;
 
                             return (
                               <div
@@ -861,11 +984,10 @@ export function Header() {
               <Link
                 href="/"
                 onClick={handleDrawerLinkClick}
-                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${
-                  isHome
-                    ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
-                    : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
-                }`}
+                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${isHome
+                  ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
+                  : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
+                  }`}
               >
                 HOME
               </Link>
@@ -873,20 +995,15 @@ export function Header() {
               {/* SHOP */}
               <div>
                 <div
-                  className={`flex items-center justify-between py-3.5 px-6 text-[13px] uppercase tracking-wider cursor-pointer transition-colors ${
-                    isShop
-                      ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
-                      : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
-                  }`}
+                  className={`flex items-center justify-between py-3.5 px-6 text-[13px] uppercase tracking-wider cursor-pointer transition-colors ${isShop
+                    ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
+                    : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
+                    }`}
                   onClick={() => setShopExpanded(!shopExpanded)}
                 >
                   <Link
                     href="/shop"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setMobileOpen(false);
-                      window.location.href = "/shop";
-                    }}
+                    onClick={handleDrawerLinkClick}
                     className="flex-1"
                   >
                     SHOP
@@ -901,9 +1018,8 @@ export function Header() {
                     aria-label="Toggle shop sub-menu"
                   >
                     <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-200 stroke-[2] ${
-                        shopExpanded ? "rotate-180" : ""
-                      }`}
+                      className={`w-4 h-4 transition-transform duration-200 stroke-[2] ${shopExpanded ? "rotate-180" : ""
+                        }`}
                     />
                   </button>
                 </div>
@@ -968,11 +1084,10 @@ export function Header() {
               <Link
                 href="/about"
                 onClick={handleDrawerLinkClick}
-                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${
-                  isAbout
-                    ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
-                    : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
-                }`}
+                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${isAbout
+                  ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
+                  : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
+                  }`}
               >
                 OUR STORY
               </Link>
@@ -981,11 +1096,10 @@ export function Header() {
               <Link
                 href="/sizing-chart"
                 onClick={handleDrawerLinkClick}
-                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${
-                  isFitGuide
-                    ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
-                    : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
-                }`}
+                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${isFitGuide
+                  ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
+                  : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
+                  }`}
               >
                 FIT GUIDE
               </Link>
@@ -994,11 +1108,10 @@ export function Header() {
               <Link
                 href="/wholesale-signup"
                 onClick={handleDrawerLinkClick}
-                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${
-                  isWholesale
-                    ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
-                    : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
-                }`}
+                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${isWholesale
+                  ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
+                  : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
+                  }`}
               >
                 WHOLESALE
               </Link>
@@ -1007,11 +1120,10 @@ export function Header() {
               <Link
                 href="/bundle-and-save"
                 onClick={handleDrawerLinkClick}
-                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${
-                  pathname === "/bundle-and-save"
-                    ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
-                    : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
-                }`}
+                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${pathname === "/bundle-and-save"
+                  ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
+                  : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
+                  }`}
               >
                 BUNDLE AND SAVE
               </Link>
@@ -1020,11 +1132,10 @@ export function Header() {
               <Link
                 href="/blog"
                 onClick={handleDrawerLinkClick}
-                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${
-                  isJournal
-                    ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
-                    : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
-                }`}
+                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${isJournal
+                  ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
+                  : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
+                  }`}
               >
                 JOURNAL
               </Link>
@@ -1033,11 +1144,10 @@ export function Header() {
               <Link
                 href="/contact-us"
                 onClick={handleDrawerLinkClick}
-                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${
-                  isContact
-                    ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
-                    : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
-                }`}
+                className={`block py-3.5 px-6 text-[13px] uppercase tracking-wider transition-colors ${isContact
+                  ? "bg-rose-50 text-rose-700 font-extrabold border-l-4 border-rose-700"
+                  : "text-neutral-600 hover:text-black hover:bg-neutral-50 font-bold"
+                  }`}
               >
                 CONTACT
               </Link>

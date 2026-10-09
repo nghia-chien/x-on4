@@ -126,6 +126,7 @@
   }
   html {
     @apply font-sans;
+    overflow-anchor: none;
   }
 }
 
@@ -197,4 +198,11 @@ nextjs-portal,
   padding-left: 0.25rem !important;
   margin-bottom: 0.35rem !important;
   line-height: 1.65 !important;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

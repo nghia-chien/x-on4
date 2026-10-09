@@ -65,7 +65,6 @@ Dự án được xây dựng trên nền tảng **Next.js 16 (App Router)** k�
 │   │   ├── CartDrawer.tsx      # Drawer giỏ hàng trượt bên phải
 │   │   ├── ProductCard.tsx     # Thẻ hiển thị sản phẩm (Ảnh, Giá, Nút thêm giỏ)
 │   │   ├── StoreShell.tsx      # Bọc bố cục cho toàn bộ trang cửa hàng
-│   │   ├── PageDecorations.tsx # Hiệu ứng trang trí & banner phụ
 │   │   ├── FormValidationEnforcer.tsx # Tiện ích kiểm tra dữ liệu form
 │   │   ├── admin/              # Components dành riêng cho trang Admin
 │   │   │   ├── AdminSidebar.tsx# Thanh điều hướng bên trái trang Admin
