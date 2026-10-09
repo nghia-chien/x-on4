@@ -18,7 +18,10 @@ import {
   ChevronRight,
   X,
   ExternalLink,
+  Users,
+  ShieldAlert,
 } from "lucide-react";
+import { AdminRole } from "@/types/admin";
 
 interface AdminSidebarProps {
   isCollapsed: boolean;
@@ -34,7 +37,7 @@ export function AdminSidebar({
   setIsMobileOpen,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { user, logout } = useAdminAuth();
+  const { user, logout, hasRole } = useAdminAuth();
   const [counts, setCounts] = React.useState<{
     wholesale: number;
     vipClub: number;
@@ -66,14 +69,21 @@ export function AdminSidebar({
     return () => clearInterval(interval);
   }, []);
 
-  const navItems = [
+  const navItems: {
+    label: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    exact?: boolean;
+    roles?: AdminRole[];
+  }[] = [
     { label: "DASHBOARD", href: "/admin", icon: Home, exact: true },
-    { label: "PRODUCT", href: "/admin/products", icon: ShoppingBag },
-    { label: "ORDER", href: "/admin/orders", icon: ShoppingCart },
-    { label: "WHOLESALE", href: "/admin/wholesale", icon: Briefcase },
-    { label: "JOURNAL", href: "/admin/blog", icon: FileText },
-    { label: "VIP CLUB", href: "/admin/newsletter", icon: Sparkles },
-    { label: "CONTACT", href: "/admin/contact", icon: Mail },
+    { label: "PRODUCT", href: "/admin/products", icon: ShoppingBag, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
+    { label: "ORDER", href: "/admin/orders", icon: ShoppingCart, roles: ["Super Admin", "Administrator", "Admin"] },
+    { label: "WHOLESALE", href: "/admin/wholesale", icon: Briefcase, roles: ["Super Admin", "Administrator", "Admin", "Wholesale Partner"] },
+    { label: "JOURNAL", href: "/admin/blog", icon: FileText, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
+    { label: "VIP CLUB", href: "/admin/newsletter", icon: Sparkles, roles: ["Super Admin", "Administrator", "Admin"] },
+    { label: "CONTACT", href: "/admin/contact", icon: Mail, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
+    { label: "ADMIN USERS", href: "/admin/admin-users", icon: Users, roles: ["Super Admin", "Administrator"] },
   ];
 
   const getBadgeCount = (label: string) => {
@@ -91,7 +101,10 @@ export function AdminSidebar({
     }
   };
 
-  const filteredNavItems = navItems;
+  const filteredNavItems = navItems.filter((item) => {
+    if (!item.roles) return true;
+    return hasRole(item.roles);
+  });
 
   const isActive = (item: (typeof navItems)[0]) => {
     if (item.exact) {

@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { Eye, EyeOff, Lock, Mail, ArrowRight, Shield, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, ArrowRight, Shield, ArrowLeft, UserPlus, KeyRound } from "lucide-react";
 
 export default function AdminLoginPage() {
-  const { login, user } = useAdminAuth();
+  const { login } = useAdminAuth();
   const [email, setEmail] = useState("admin@xonails.com");
   const [password, setPassword] = useState("Admin@123456");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,15 +27,18 @@ export default function AdminLoginPage() {
     }
   };
 
+  const setDemoAccount = (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword("Admin@123456");
+    setErrorMessage("");
+  };
+
   return (
     <div className="min-h-screen bg-[#F0F2F7] font-sans selection:bg-indigo-600 selection:text-white flex items-center justify-center p-6 sm:p-10 lg:p-16">
-
-      {/* Centered Main Box with 50:50 ratio and 4-side spacing */}
+      {/* Centered Main Box with 50:50 ratio */}
       <div className="w-full max-w-5xl bg-white border border-neutral-200 shadow-2xl shadow-neutral-900/10 grid grid-cols-1 lg:grid-cols-2 items-stretch overflow-hidden">
-
-        {/* LEFT COLUMN: 50% Image - Sharp, Clear, No Blur, Straight Edges */}
-        <div className="relative min-h-[380px] sm:min-h-[480px] lg:min-h-[640px] w-full bg-neutral-100 overflow-hidden flex flex-col justify-end p-8 sm:p-10">
-          {/* Full Crisp Image - 100% sharp & natural, no heavy dark overlay or blur */}
+        {/* LEFT COLUMN: 50% Image */}
+        <div className="relative min-h-[380px] sm:min-h-[480px] lg:min-h-[680px] w-full bg-neutral-100 overflow-hidden flex flex-col justify-between p-8 sm:p-10">
           <Image
             src="/images/login-nail-hero.webp"
             alt="X-ON Luxury Nails"
@@ -45,32 +48,65 @@ export default function AdminLoginPage() {
             className="object-cover object-center"
           />
 
-          {/* Bottom Slogan - Clean & readable without blurring photo */}
-          <div className="relative z-10 bg-neutral-950/75 text-white p-6 border border-white/10">
-            <p className="text-xs font-semibold uppercase tracking-wider text-pink-300 mb-1">
+          <div className="relative z-10">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-black/80 text-pink-300 text-[10px] font-bold uppercase tracking-widest backdrop-blur-xs">
+              <Shield className="w-3.5 h-3.5 text-pink-400" /> Secure Admin Portal
+            </span>
+          </div>
+
+          <div className="relative z-10 bg-neutral-950/80 text-white p-6 border border-white/10 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-pink-300">
               X-ON Luxury Nails Atelier
             </p>
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white leading-snug">
-              Get access your personal hub for clarity and productivity
+              Get access to your personal hub for clarity and productivity
             </h2>
+
+            {/* Quick Demo Test Accounts */}
+            <div className="pt-2 border-t border-white/10">
+              <p className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 mb-2 flex items-center gap-1">
+                <KeyRound className="w-3 h-3 text-amber-400" /> Quick Demo Test Accounts:
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setDemoAccount("admin@xonails.com")}
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold border border-white/15 transition-all cursor-pointer"
+                >
+                  Super Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDemoAccount("wholesale@xonails.com")}
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold border border-white/15 transition-all cursor-pointer"
+                >
+                  Wholesale Partner
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDemoAccount("customer@xonails.com")}
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold border border-white/15 transition-all cursor-pointer"
+                >
+                  VIP Customer
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: 50% Form - Clean, Straight Edges */}
+        {/* RIGHT COLUMN: 50% Form */}
         <div className="flex flex-col justify-between p-8 sm:p-10 lg:p-12 xl:p-14 bg-white">
           <div>
             {/* Top Bar */}
             <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center">
-                <Image
-                  src="/images/logo-xon-clean.webp"
-                  alt="X-ON Nails Logo"
-                  width={130}
-                  height={70}
-                  priority
-                  className="w-32 h-16 object-contain object-left"
-                />
-              </div>
+              <Image
+                src="/images/logo-xon-clean.webp"
+                alt="X-ON Nails Logo"
+                width={130}
+                height={70}
+                priority
+                className="w-32 h-16 object-contain object-left"
+              />
 
               <Link
                 href="/"
@@ -82,10 +118,26 @@ export default function AdminLoginPage() {
             </div>
 
             {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
-                Sign in to Admin
-              </h1>
+            <div className="mb-6 flex items-start justify-between">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
+                  Sign in to Admin
+                </h1>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Don&apos;t have an account yet?{" "}
+                  <Link href="/admin/register" className="text-indigo-600 font-bold hover:underline">
+                    Register here
+                  </Link>
+                </p>
+              </div>
+
+              <Link
+                href="/admin/register"
+                className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-colors border border-indigo-200"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Register</span>
+              </Link>
             </div>
 
             {/* Error Alert */}
@@ -161,6 +213,10 @@ export default function AdminLoginPage() {
                   />
                   <span>Remember me</span>
                 </label>
+
+                <Link href="/admin/register" className="text-xs text-indigo-600 font-semibold hover:underline">
+                  Create new account
+                </Link>
               </div>
 
               {/* Submit Button */}

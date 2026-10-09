@@ -1,43 +1,50 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminHeader } from "./AdminHeader";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isLoading } = useAdminAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const isLoginPage = pathname === "/admin/login";
+  const isPublicAuthPage = pathname === "/admin/login" || pathname === "/admin/register";
+
+  useEffect(() => {
+    if (!isLoading && !user && !isPublicAuthPage) {
+      router.push("/admin/login");
+    }
+  }, [isLoading, user, isPublicAuthPage, router]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-950 text-white gap-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-950 text-white gap-4 font-sans">
         <div className="w-10 h-10 border-3 border-amber-400 border-t-transparent rounded-full animate-spin" />
         <p className="text-xs uppercase tracking-widest text-neutral-400 font-semibold">
-          Authenticating X-ON Admin...
+          Authenticating X-ON Admin Session...
         </p>
       </div>
     );
   }
 
-  // If on login page, render clean full-page login screen without sidebar
-  if (isLoginPage) {
+  // If on login or register page, render clean full-page auth screen without sidebar
+  if (isPublicAuthPage) {
     return <>{children}</>;
   }
 
-  // If not logged in, AdminAuthProvider redirects to /admin/login
+  // If not logged in, render null while redirecting
   if (!user) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col antialiased">
+    <div className="min-h-screen bg-neutral-50 flex flex-col antialiased font-sans">
       {/* Sidebar */}
       <AdminSidebar
         isCollapsed={isCollapsed}
