@@ -12,7 +12,10 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
+  // Dynamically resolve siteUrl based on request headers to prevent redirect_uri_mismatch
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  const protocol = req.headers.get("x-forwarded-proto") || (host?.includes("localhost") ? "http" : "https");
+  const siteUrl = host ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin);
   const state = crypto.randomBytes(16).toString("hex");
 
   let authUrl = "";

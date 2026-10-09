@@ -3,7 +3,9 @@ import { DataStore } from "@/lib/dataStore";
 import { generateToken } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  const protocol = req.headers.get("x-forwarded-proto") || (host?.includes("localhost") ? "http" : "https");
+  const siteUrl = host ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin);
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const state = searchParams.get("state");
