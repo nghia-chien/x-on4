@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { usePathname, useRouter } from "next/navigation";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 import {
   Menu,
   ShoppingBag,
@@ -16,6 +17,11 @@ import {
   TrendingUp,
   Clock,
   ArrowRight,
+  User,
+  LogIn,
+  UserPlus,
+  LogOut,
+  ShieldCheck,
 } from "lucide-react";
 
 interface SearchProductItem {
@@ -60,6 +66,8 @@ export function Header() {
   const shopBlockTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { openCart, totalCount, subtotal } = useCart();
+  const { user: authUser, logout: authLogout } = useAdminAuth();
+  const [accountOpen, setAccountOpen] = useState(false);
 
   useEffect(() => {
     setIsShopMenuOpen(false);
@@ -285,7 +293,7 @@ export function Header() {
   //   </div>
   // );
   const renderActions = (showSubtotal = true, hideSearch = false) => (
-    <div className="flex items-center space-x-2 sm:space-x-4 text-gray-800">
+    <div className="flex items-center space-x-2 sm:space-x-3.5 text-gray-800">
       <Link
         href="/shop"
         onClick={handleLinkClick}
@@ -305,6 +313,120 @@ export function Header() {
           <Search className="w-5 h-5 stroke-[1.5]" />
         </button>
       )}
+
+      {/* Account / Authentication Buttons & Popover */}
+      <div className="relative">
+        {authUser ? (
+          <button
+            onClick={() => setAccountOpen(!accountOpen)}
+            className="p-1 flex items-center gap-1.5 hover:text-rose-700 transition-colors cursor-pointer"
+            title={authUser.name}
+          >
+            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-rose-500 text-white font-bold text-xs flex items-center justify-center shadow-2xs">
+              {authUser.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="hidden xl:inline text-xs font-semibold text-gray-900 truncate max-w-[90px]">
+              {authUser.name.split(" ")[0]}
+            </span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/admin/login"
+              onClick={handleLinkClick}
+              className="hidden md:inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-gray-700 hover:text-rose-700 hover:bg-rose-50 rounded-full transition-all"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </Link>
+            <Link
+              href="/admin/register"
+              onClick={handleLinkClick}
+              className="hidden sm:inline-flex items-center gap-1 px-3.5 py-1 text-xs font-bold text-white bg-neutral-950 hover:bg-rose-900 rounded-full shadow-xs transition-all hover:scale-102"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Register</span>
+            </Link>
+            <button
+              onClick={() => setAccountOpen(!accountOpen)}
+              className="p-1.5 hover:text-rose-700 transition-colors sm:hidden cursor-pointer"
+              title="Account"
+            >
+              <User className="w-5 h-5 stroke-[1.5]" />
+            </button>
+          </div>
+        )}
+
+        {/* Account Popover Menu */}
+        {accountOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40 cursor-default"
+              onClick={() => setAccountOpen(false)}
+            />
+            <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-neutral-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-gray-800">
+              {authUser ? (
+                <>
+                  <div className="px-4 py-2 border-b border-neutral-100">
+                    <p className="text-xs font-bold text-neutral-900 truncate">{authUser.name}</p>
+                    <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">{authUser.role}</p>
+                  </div>
+                  <div className="py-1 text-xs font-medium">
+                    <Link
+                      href="/admin"
+                      onClick={() => {
+                        setAccountOpen(false);
+                        handleLinkClick();
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-neutral-500" />
+                      <span>Admin Portal</span>
+                    </Link>
+                  </div>
+                  <div className="border-t border-neutral-100 pt-1">
+                    <button
+                      onClick={() => {
+                        setAccountOpen(false);
+                        authLogout();
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors text-left cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="p-2 space-y-1 text-xs font-bold">
+                  <Link
+                    href="/admin/login"
+                    onClick={() => {
+                      setAccountOpen(false);
+                      handleLinkClick();
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-800 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                  >
+                    <LogIn className="w-4 h-4 text-neutral-500" />
+                    <span>Sign In to Account</span>
+                  </Link>
+                  <Link
+                    href="/admin/register"
+                    onClick={() => {
+                      setAccountOpen(false);
+                      handleLinkClick();
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-950 text-white hover:bg-rose-900 transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4 text-rose-300" />
+                    <span>Create New Account</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
 
       <button
         onClick={openCart}
@@ -1152,16 +1274,58 @@ export function Header() {
                 CONTACT
               </Link>
 
-              {/* WISHLIST HEART ICON */}
-              <div className="py-3.5 px-6">
-                <Link
-                  href="/shop"
-                  onClick={handleDrawerLinkClick}
-                  className="inline-block text-neutral-400 hover:text-rose-600 transition-colors"
-                  aria-label="Wishlist"
-                >
-                  <Heart className="w-4 h-4 fill-neutral-400 stroke-neutral-400" />
-                </Link>
+              {/* ACCOUNT AUTHENTICATION IN MOBILE DRAWER */}
+              <div className="p-4 bg-neutral-50/80 border-t border-neutral-100 space-y-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 block px-2">
+                  Account Services
+                </span>
+                {authUser ? (
+                  <div className="space-y-1">
+                    <div className="px-2 py-1 flex items-center justify-between">
+                      <span className="text-xs font-bold text-neutral-900 truncate">{authUser.name}</span>
+                      <span className="text-[9px] bg-amber-100 text-amber-800 font-bold uppercase px-2 py-0.5 rounded-full">
+                        {authUser.role}
+                      </span>
+                    </div>
+                    <Link
+                      href="/admin"
+                      onClick={handleDrawerLinkClick}
+                      className="flex items-center gap-2 py-2 px-3 text-xs font-bold text-neutral-900 bg-white border border-neutral-200 rounded-lg hover:border-black transition-colors"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                      <span>Admin Portal</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleDrawerLinkClick();
+                        authLogout();
+                      }}
+                      className="w-full flex items-center gap-2 py-2 px-3 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer text-left"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      href="/admin/login"
+                      onClick={handleDrawerLinkClick}
+                      className="flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold text-neutral-900 bg-white border border-neutral-200 rounded-lg hover:border-black transition-colors"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>Sign In</span>
+                    </Link>
+                    <Link
+                      href="/admin/register"
+                      onClick={handleDrawerLinkClick}
+                      className="flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold text-white bg-neutral-950 rounded-lg hover:bg-rose-900 transition-colors shadow-xs"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-rose-300" />
+                      <span>Register</span>
+                    </Link>
+                  </div>
+                )}
               </div>
             </nav>
           </div>

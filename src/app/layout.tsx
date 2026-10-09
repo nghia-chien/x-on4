@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
+import { AdminAuthProvider } from "@/context/AdminAuthContext";
 import { StoreShell } from "@/components/StoreShell";
 import { FormValidationEnforcer } from "@/components/FormValidationEnforcer";
 
@@ -43,9 +44,11 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-white text-gray-900 selection:bg-rose-100 selection:text-rose-900">
         <FormValidationEnforcer />
-        <CartProvider>
-          <StoreShell>{children}</StoreShell>
-        </CartProvider>
+        <AdminAuthProvider>
+          <CartProvider>
+            <StoreShell>{children}</StoreShell>
+          </CartProvider>
+        </AdminAuthProvider>
       </body>
     </html>
   );
