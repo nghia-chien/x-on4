@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { ComingSoonItem } from "@/types/admin";
@@ -12,7 +14,7 @@ import {
   Clock,
   Calendar,
   X,
-  Sparkles,
+  Sparkles
 } from "lucide-react";
 
 export default function AdminComingSoonPage() {
@@ -40,7 +42,7 @@ export default function AdminComingSoonPage() {
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/coming-soon");
+      const res = await apiFetch("/api/coming-soon");
       if (res.ok) {
         const json = await res.json();
         if (json.success) setItems(json.data);
@@ -87,14 +89,13 @@ export default function AdminComingSoonPage() {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const payload = {
+const payload = {
         productName,
         image,
         description,
         expectedReleaseDate,
         status,
-        displayOrder: Number(displayOrder || 0),
+        displayOrder: Number(displayOrder || 0)
       };
 
       const url = editingItem
@@ -105,10 +106,9 @@ export default function AdminComingSoonPage() {
       const res = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const json = await res.json();
@@ -130,11 +130,9 @@ export default function AdminComingSoonPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/coming-soon/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/coming-soon/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success("Item deleted");

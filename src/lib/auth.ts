@@ -53,16 +53,16 @@ export function verifyToken(token: string): JWTPayload | null {
 }
 
 export function getTokenFromRequest(req: NextRequest): string | null {
-  // Check Authorization header
-  const authHeader = req.headers.get("authorization");
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    return authHeader.substring(7);
-  }
-
-  // Check cookies
+  // Primary: HttpOnly session cookie (browser clients — no JS access to JWT)
   const cookieToken = req.cookies.get("admin_token")?.value;
   if (cookieToken) {
     return cookieToken;
+  }
+
+  // Optional: Authorization header for non-browser tooling only
+  const authHeader = req.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7);
   }
 
   return null;

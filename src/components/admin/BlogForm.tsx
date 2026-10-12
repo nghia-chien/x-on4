@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { BlogPostItem } from "@/types/admin";
@@ -17,8 +19,7 @@ export function BlogForm({ initialData, isEdit = false }: BlogFormProps) {
 
   const handleSave = async (data: BlogPostData) => {
     try {
-      const token = localStorage.getItem("admin_token");
-      const payload = {
+const payload = {
         title: data.title,
         slug: data.slug,
         excerpt: data.summary || data.excerpt || "",
@@ -29,7 +30,7 @@ export function BlogForm({ initialData, isEdit = false }: BlogFormProps) {
         tags: data.tags || initialData?.tags || [],
         status: data.status || (data.isPublic ? "published" : "draft"),
         seoTitle: data.seoTitle || data.title,
-        seoDescription: data.seoDescription || data.summary || data.excerpt || "",
+        seoDescription: data.seoDescription || data.summary || data.excerpt || ""
       };
 
       const url =
@@ -41,10 +42,9 @@ export function BlogForm({ initialData, isEdit = false }: BlogFormProps) {
       const res = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const json = await res.json();
@@ -81,7 +81,7 @@ export function BlogForm({ initialData, isEdit = false }: BlogFormProps) {
         isPublic: initialData.status === "published",
         seoTitle: initialData.seoTitle,
         seoDescription: initialData.seoDescription,
-        metaDesc: initialData.seoDescription,
+        metaDesc: initialData.seoDescription
       }
     : undefined;
 

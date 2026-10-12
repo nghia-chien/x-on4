@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/context/ToastContext";
 import { ContactMessageItem } from "@/types/admin";
@@ -7,7 +9,7 @@ import {
   MessageSquare,
   Trash2,
   RefreshCw,
-  Search,
+  Search
 } from "lucide-react";
 
 export default function AdminContactPage() {
@@ -17,11 +19,6 @@ export default function AdminContactPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const authHeaders = useCallback((): Record<string, string> => {
-    const token = localStorage.getItem("admin_token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
   const fetchMessages = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -29,10 +26,7 @@ export default function AdminContactPage() {
       if (statusFilter !== "all") url.searchParams.set("status", statusFilter);
       if (searchQuery.trim()) url.searchParams.set("search", searchQuery.trim());
 
-      const res = await fetch(url.toString(), {
-        headers: authHeaders(),
-        credentials: "include",
-      });
+      const res = await apiFetch(url.toString());
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
@@ -46,7 +40,7 @@ export default function AdminContactPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, searchQuery, error, authHeaders]);
+  }, [statusFilter, searchQuery, error]);
 
   useEffect(() => {
     fetchMessages();
@@ -55,10 +49,8 @@ export default function AdminContactPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this message?")) return;
     try {
-      const res = await fetch(`/api/contact?id=${id}`, {
+      const res = await apiFetch(`/api/contact?id=${id}`, {
         method: "DELETE",
-        headers: authHeaders(),
-        credentials: "include",
       });
       if (res.ok) {
         setMessages((prev) => prev.filter((m) => m.id !== id));
@@ -182,13 +174,13 @@ export default function AdminContactPage() {
                           {new Date(msg.createdAt).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
-                            year: "numeric",
+                            year: "numeric"
                           })}
                         </div>
                         <div className="text-[10px] text-neutral-400 mt-0.5">
                           {new Date(msg.createdAt).toLocaleTimeString("en-US", {
                             hour: "2-digit",
-                            minute: "2-digit",
+                            minute: "2-digit"
                           })}
                         </div>
                       </td>
@@ -199,13 +191,11 @@ export default function AdminContactPage() {
                           onChange={async (e) => {
                             const newStatus = e.target.value as ContactMessageItem["status"];
                             try {
-                              const res = await fetch(`/api/contact`, {
+                              const res = await apiFetch(`/api/contact`, {
                                 method: "PUT",
                                 headers: {
                                   "Content-Type": "application/json",
-                                  ...authHeaders(),
                                 },
-                                credentials: "include",
                                 body: JSON.stringify({ id: msg.id, status: newStatus }),
                               });
                               if (res.ok) {

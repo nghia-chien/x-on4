@@ -2,6 +2,19 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { toast, Toaster } from "sonner";
+import {
   compressImageFile,
   optimizeImageUrl,
   formatVideoEmbedUrl,
@@ -10,302 +23,46 @@ import OptimizedImage from "@/components/common/OptimizedImage";
 import PromptModal, { PromptModalProps } from "@/components/common/PromptModal";
 import ImageUploadModal from "@/components/common/ImageUploadModal";
 import { BlogBlock } from "@/components/blog/ArticleBody";
-
-// Helper to convert legacy Markdown to HTML for initial block load
-function mdToHtml(str?: string): string {
-  if (!str) return "";
-  return str
-    .replace(
-      /!\[(.*?)\]\((.*?)\)/g,
-      '<img src="$2" alt="$1" class="my-3 max-h-[420px] max-w-full rounded-xl object-cover block mx-auto shadow-lg" />'
-    )
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/(?<!\*)\*(?!\*)([^\*]+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>")
-    .replace(/~~(.*?)~~/g, "<del>$1</del>")
-    .replace(
-      /\[(.*?)\]\((.*?)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-rose-600 dark:text-rose-400 hover:underline font-medium">$1</a>'
-    );
-}
-
-// Clean redundant/nested align tags if present
-function cleanAlignTags(str?: string): string {
-  if (!str) return "";
-  let cleaned = str;
-  while (/<div align="(?:left|center|right)"[^>]*>([\s\S]*?)<\/div>/i.test(cleaned)) {
-    cleaned = cleaned.replace(
-      /<div align="(?:left|center|right)"[^>]*>([\s\S]*?)<\/div>/gi,
-      "$1"
-    );
-  }
-  cleaned = cleaned
-    .replace(/<div align="(?:left|center|right)"[^>]*>/gi, "")
-    .replace(/<\/div>/gi, "");
-  return cleaned;
-}
-
-// Convert File to Base64
-const readFileAsBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-    reader.readAsDataURL(file);
-  });
-};
-
-// Convert hex string to Base64 data URL
-function hexToBase64(hexStr: string, mimeType: string): string | null {
-  try {
-    const cleanHex = hexStr.replace(/[^0-9a-fA-F]/g, "");
-    if (cleanHex.length < 32 || cleanHex.length % 2 !== 0) return null;
-
-    const byteCount = cleanHex.length / 2;
-    const u8 = new Uint8Array(byteCount);
-    for (let i = 0; i < byteCount; i++) {
-      u8[i] = parseInt(cleanHex.substring(i * 2, i * 2 + 2), 16);
-    }
-
-    let binary = "";
-    const chunkSize = 8192;
-    for (let i = 0; i < u8.length; i += chunkSize) {
-      const chunk = u8.subarray(i, Math.min(i + chunkSize, u8.length));
-      binary += String.fromCharCode.apply(null, Array.from(chunk));
-    }
-    return `data:${mimeType};base64,${btoa(binary)}`;
-  } catch {
-    return null;
-  }
-}
-
-// Extract images from Word's text/rtf clipboard data
-function extractImagesFromRtf(rtf: string): string[] {
-  if (!rtf) return [];
-  const results: string[] = [];
-  try {
-    let searchIdx = 0;
-    while ((searchIdx = rtf.indexOf("\\pict", searchIdx)) !== -1) {
-      // Find the starting brace of this picture group
-      const startBrace = rtf.lastIndexOf("{", searchIdx);
-      if (startBrace === -1) {
-        searchIdx += 5;
-        continue;
-      }
-
-      // Track brace depth to find matching closing brace
-      let depth = 1;
-      let endIdx = startBrace + 1;
-      while (endIdx < rtf.length && depth > 0) {
-        const char = rtf[endIdx];
-        if (char === "\\") {
-          endIdx += 2;
-          continue;
-        }
-        if (char === "{") depth++;
-        else if (char === "}") depth--;
-        endIdx++;
-      }
-
-      const pictBlock = rtf.slice(startBrace, endIdx);
-      searchIdx = endIdx;
-
-      // Determine mime type
-      let mime = "image/png";
-      if (pictBlock.includes("\\jpegblip") || pictBlock.includes("\\jpgblip")) {
-        mime = "image/jpeg";
-      } else if (pictBlock.includes("\\pngblip")) {
-        mime = "image/png";
-      }
-
-      // Extract hex sequence
-      let rawHex = "";
-      const blipMatch = pictBlock.match(
-        /\\(pngblip|jpegblip|jpgblip|emfblip|wmetafile\d*|dibitmap\d*)[^\r\n0-9a-fA-F]*([0-9a-fA-F\s\r\n]{64,})/i
-      );
-      if (blipMatch && blipMatch[2]) {
-        rawHex = blipMatch[2].replace(/[^0-9a-fA-F]/g, "");
-      } else {
-        const hexMatches = pictBlock.match(/[0-9a-fA-F\s\r\n]{64,}/g);
-        if (hexMatches) {
-          for (const seq of hexMatches) {
-            const clean = seq.replace(/[^0-9a-fA-F]/g, "");
-            if (clean.length > rawHex.length) {
-              rawHex = clean;
-            }
-          }
-        }
-      }
-
-      if (rawHex.length >= 64) {
-        const hexLower = rawHex.toLowerCase();
-        if (hexLower.startsWith("ffd8ff") || hexLower.includes("ffd8ffe0") || hexLower.includes("ffd8ffe1")) {
-          mime = "image/jpeg";
-        } else if (hexLower.startsWith("89504e47")) {
-          mime = "image/png";
-        } else if (hexLower.startsWith("47494638")) {
-          mime = "image/gif";
-        } else if (hexLower.startsWith("424d")) {
-          mime = "image/bmp";
-        } else if (hexLower.startsWith("52494646") && hexLower.includes("57454250")) {
-          mime = "image/webp";
-        }
-
-        const base64Url = hexToBase64(rawHex, mime);
-        if (base64Url) {
-          results.push(base64Url);
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("RTF image parsing error:", err);
-  }
-  return results;
-}
-
-// Helper to clean pasted HTML and fix local/Word file:// image paths
-function cleanPastedHtml(html: string, rtfImages: string[] = []): string {
-  if (!html) return "";
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-
-    // Remove meta, style, script, link, xml, head tags
-    doc.querySelectorAll("meta, style, script, link, xml, head").forEach((el) => el.remove());
-
-    // Unwrap or clean legacy <font> tags
-    doc.querySelectorAll("font").forEach((fontEl) => {
-      const parent = fontEl.parentNode;
-      if (parent) {
-        while (fontEl.firstChild) {
-          parent.insertBefore(fontEl.firstChild, fontEl);
-        }
-        parent.removeChild(fontEl);
-      }
-    });
-
-    let rtfImgIndex = 0;
-
-    // Handle VML imagedata tags (Word often outputs <v:imagedata src="file:///...">)
-    doc.querySelectorAll("v\\:imagedata, imagedata").forEach((vmlEl) => {
-      const src = vmlEl.getAttribute("src") || "";
-      if (src.startsWith("file:") || src.startsWith("cid:") || src.startsWith("blob:") || !src) {
-        if (rtfImages.length > rtfImgIndex) {
-          const img = doc.createElement("img");
-          img.src = rtfImages[rtfImgIndex++];
-          img.className =
-            "my-3 max-h-[420px] max-w-full rounded-xl object-cover block mx-auto shadow-lg text-center select-none";
-          img.setAttribute("contenteditable", "false");
-          vmlEl.parentNode?.replaceChild(img, vmlEl);
-        } else {
-          vmlEl.remove();
-        }
-      }
-    });
-
-    // Process all <img> tags
-    const allImages = doc.querySelectorAll("img");
-    allImages.forEach((img) => {
-      let src = img.getAttribute("src") || "";
-      const isLocalOrInvalid =
-        src.startsWith("file:") ||
-        src.startsWith("blob:") ||
-        src.startsWith("cid:") ||
-        src.startsWith("webkit-fake-url:") ||
-        !src.trim();
-
-      if (isLocalOrInvalid) {
-        if (rtfImages.length > rtfImgIndex) {
-          src = rtfImages[rtfImgIndex++];
-          img.setAttribute("src", src);
-        } else {
-          // Can't load local file:// URL from web, remove to prevent broken image icon
-          img.remove();
-          return;
-        }
-      }
-
-      img.className =
-        "my-3 max-h-[420px] max-w-full rounded-xl object-cover block mx-auto shadow-lg text-center select-none";
-      img.setAttribute("contenteditable", "false");
-      img.removeAttribute("align");
-      img.removeAttribute("width");
-      img.removeAttribute("height");
-
-      // Ensure every image is followed by an editable paragraph so user can type below
-      const pAfter = doc.createElement("p");
-      pAfter.innerHTML = "<br>";
-      if (img.nextSibling) {
-        img.parentNode?.insertBefore(pAfter, img.nextSibling);
-      } else {
-        img.parentNode?.appendChild(pAfter);
-      }
-    });
-
-    const allElements = doc.body.querySelectorAll("*");
-    allElements.forEach((el) => {
-      const htmlEl = el as HTMLElement;
-      // 1. Remove background color and background styles
-      htmlEl.style.backgroundColor = "";
-      htmlEl.style.background = "";
-      htmlEl.style.backgroundImage = "";
-      htmlEl.style.backgroundClip = "";
-      htmlEl.removeAttribute("bgcolor");
-
-      // 2. Remove default text colors if needed
-      if (htmlEl.getAttribute("color")) {
-        htmlEl.removeAttribute("color");
-      }
-
-      // 3. Remove MS Word / Google Docs specific classes
-      if (htmlEl.className && htmlEl.tagName !== "IMG") {
-        const cleanedClass = htmlEl.className
-          .split(" ")
-          .filter(
-            (c) =>
-              !c.startsWith("Mso") &&
-              !c.startsWith("docs-") &&
-              !c.startsWith("Apple-")
-          )
-          .join(" ");
-        if (cleanedClass) {
-          htmlEl.className = cleanedClass;
-        } else {
-          htmlEl.removeAttribute("class");
-        }
-      }
-
-      // 4. Ensure all figures are centered
-      if (htmlEl.tagName.toLowerCase() === "figure") {
-        htmlEl.className = "my-4 text-center block mx-auto";
-        htmlEl.removeAttribute("align");
-      }
-
-      // Remove style attribute if empty
-      if (!htmlEl.getAttribute("style") || htmlEl.getAttribute("style")?.trim() === "") {
-        htmlEl.removeAttribute("style");
-      }
-    });
-
-    // Ensure the document ends with an editable line
-    const lastChild = doc.body.lastElementChild;
-    if (
-      lastChild &&
-      (lastChild.tagName === "IMG" ||
-        lastChild.tagName === "FIGURE" ||
-        lastChild.tagName === "TABLE" ||
-        lastChild.tagName === "DIV" ||
-        lastChild.tagName === "BLOCKQUOTE")
-    ) {
-      const p = doc.createElement("p");
-      p.innerHTML = "<br>";
-      doc.body.appendChild(p);
-    }
-
-    return doc.body.innerHTML || html;
-  } catch {
-    return html;
-  }
-}
+import {
+  mdToHtml,
+  cleanAlignTags,
+  readFileAsBase64,
+  extractImagesFromRtf,
+  cleanPastedHtml,
+  createBlockId,
+  createEmptyBlock,
+  ensureBlockIds,
+  duplicateBlock,
+  moveBlockById,
+  reorderBlocksByIds,
+  findBlockIndexById,
+  countWordsFromBlocks,
+  estimateReadingMinutes,
+  EDITOR_TEMPLATES,
+  getEditorHistoryMeta,
+  useEditorBlocksStore,
+} from "@/lib/editor";
+import { useAutosave } from "@/hooks/editor/useAutosave";
+import { useBubbleToolbar } from "@/hooks/editor/useBubbleToolbar";
+import { useSlashMenu } from "@/hooks/editor/useSlashMenu";
+import { useBeforeUnload } from "@/hooks/editor/useBeforeUnload";
+import { useDropMedia } from "@/hooks/editor/useDropMedia";
+import {
+  BubbleToolbar,
+  SlashCommandMenu,
+  EditorStatusBar,
+  ConfirmDialog,
+  SeoPreviewCard,
+  VersionHistoryPanel,
+  ShortcutsHelp,
+  DropOverlay,
+  SortableBlockWrapper,
+  CalloutBlock,
+  ToggleBlock,
+  GalleryBlock,
+  EmbedBlock,
+  CodeBlockEditor,
+} from "@/components/editor";
 
 // Rich WYSIWYG ContentEditable Block Component
 interface RichEditableBlockProps {
@@ -978,6 +735,8 @@ export default function AdminEditor({
   } | null>(null);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
+  /** Prefer block id as source of truth; index is derived when needed. */
+  const targetBlockIdRef = useRef<string | null>(null);
   const targetBlockIndexRef = useRef<number | null>(null);
   const savedSelectionRef = useRef<Range | null>(null);
 
@@ -1042,14 +801,35 @@ export default function AdminEditor({
       }
     }
 
-    return [{ id: "block-init-1", type: "paragraph", text: "" }];
+    return ensureBlockIds([{ id: createBlockId(), type: "paragraph", text: "" }]);
   }, [postToEdit]);
 
-  const [blocks, setBlocks] = useState<BlogBlock[]>(getInitialBlocks);
+  const [blocks, setBlocks] = useState<BlogBlock[]>(() =>
+    ensureBlockIds(getInitialBlocks())
+  );
   const blocksRef = useRef<BlogBlock[]>(blocks);
   useEffect(() => {
     blocksRef.current = blocks;
   }, [blocks]);
+
+  const setTargetBlockId = useCallback((id: string | null) => {
+    targetBlockIdRef.current = id;
+    if (!id) {
+      targetBlockIndexRef.current = null;
+      return;
+    }
+    const idx = findBlockIndexById(blocksRef.current, id);
+    targetBlockIndexRef.current = idx === -1 ? null : idx;
+  }, []);
+
+  // Sync into zustand+zundo store for diff-based undo / version history
+  const storeSetBlocks = useEditorBlocksStore((s) => s.setBlocks);
+  const storeVersions = useEditorBlocksStore((s) => s.versions);
+  const storePushVersion = useEditorBlocksStore((s) => s.pushVersion);
+  const storeRestoreVersion = useEditorBlocksStore((s) => s.restoreVersion);
+  useEffect(() => {
+    storeSetBlocks(blocks);
+  }, [blocks, storeSetBlocks]);
 
   const [isPublic, setIsPublic] = useState(
     postToEdit?.status !== undefined
@@ -1057,33 +837,83 @@ export default function AdminEditor({
       : true
   );
 
-  // History State
-  const [history, setHistory] = useState<BlogBlock[][]>([getInitialBlocks()]);
+  // Local history kept for compatibility; also mirrored via zundo store
+  const [history, setHistory] = useState<BlogBlock[][]>([
+    ensureBlockIds(getInitialBlocks()),
+  ]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showVersions, setShowVersions] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    blockId: string;
+    label: string;
+  } | null>(null);
+
+  const bubble = useBubbleToolbar("[data-editor-canvas]");
+  const slash = useSlashMenu();
+  const dropMedia = useDropMedia();
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
+
+  const wordCount = useMemo(() => countWordsFromBlocks(blocks), [blocks]);
+  const readingMinutes = useMemo(
+    () => estimateReadingMinutes(blocks),
+    [blocks]
+  );
 
   const pushHistory = (newBlocks: BlogBlock[]) => {
-    setBlocks(newBlocks);
+    const next = ensureBlockIds(newBlocks);
+    setBlocks(next);
+    setIsDirty(true);
     const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(newBlocks);
+    newHistory.push(next);
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
+    storeSetBlocks(next);
   };
 
   const handleUndo = () => {
+    const meta = getEditorHistoryMeta();
+    if (meta.canUndo) {
+      meta.undo();
+      const latest = useEditorBlocksStore.getState().blocks;
+      setBlocks(latest);
+      setIsDirty(true);
+      return;
+    }
     if (historyIndex > 0) {
       const newIdx = historyIndex - 1;
       setHistoryIndex(newIdx);
       setBlocks(history[newIdx]);
+      setIsDirty(true);
     }
   };
 
   const handleRedo = () => {
+    const meta = getEditorHistoryMeta();
+    if (meta.canRedo) {
+      meta.redo();
+      const latest = useEditorBlocksStore.getState().blocks;
+      setBlocks(latest);
+      setIsDirty(true);
+      return;
+    }
     if (historyIndex < history.length - 1) {
       const newIdx = historyIndex + 1;
       setHistoryIndex(newIdx);
       setBlocks(history[newIdx]);
+      setIsDirty(true);
     }
   };
+
+  const historyMeta = getEditorHistoryMeta();
+  const canUndo = historyMeta.canUndo || historyIndex > 0;
+  const canRedo =
+    historyMeta.canRedo || historyIndex < history.length - 1;
 
   // Focus & Toolbar Active States
   const [isBoldActive, setIsBoldActive] = useState(false);
@@ -1193,15 +1023,12 @@ export default function AdminEditor({
         if (blockEl) {
           const blockId = blockEl.getAttribute("data-block-id");
           if (blockId) {
-            const foundIdx = blocksRef.current.findIndex((b) => b.id === blockId);
-            if (foundIdx !== -1) {
-              targetBlockIndexRef.current = foundIdx;
-            }
+            setTargetBlockId(blockId);
           }
         }
       }
     }
-  }, []);
+  }, [setTargetBlockId]);
 
   const restoreSavedSelection = useCallback(() => {
     const sel = window.getSelection();
@@ -1598,17 +1425,37 @@ export default function AdminEditor({
         ["Data 4", "Data 5", "Data 6"],
       ];
     } else if (type === "code") {
-      newBlock.code = "";
+      newBlock = createEmptyBlock("code", { language: "plaintext" });
     } else if (type === "columns") {
-      newBlock.layout = "50-50";
-      newBlock.leftType = "text";
-      newBlock.leftText = "";
-      newBlock.rightType = "text";
-      newBlock.rightText = "";
+      newBlock = createEmptyBlock("columns", {
+        layout: "50-50",
+        columnLayout: "50-50",
+      });
+    } else if (
+      type === "callout" ||
+      type === "toggle" ||
+      type === "gallery" ||
+      type === "embed" ||
+      type === "divider" ||
+      type === "image" ||
+      type === "video"
+    ) {
+      newBlock = createEmptyBlock(type, level ? { level } : {});
     }
 
-    // Always create a follow-up paragraph block underneath for rich blocks (quote, table, columns, video, code, divider)
-    const needsFollowUpParagraph = ["quote", "table", "columns", "video", "code", "divider"].includes(type);
+    // Always create a follow-up paragraph block underneath for rich blocks
+    const needsFollowUpParagraph = [
+      "quote",
+      "table",
+      "columns",
+      "video",
+      "code",
+      "divider",
+      "callout",
+      "toggle",
+      "gallery",
+      "embed",
+    ].includes(type);
 
     const followUpParagraphId = `block-${Date.now() + 1}-${Math.random().toString(36).substring(2, 6)}`;
     const followUpParagraph: BlogBlock = {
@@ -1666,24 +1513,42 @@ export default function AdminEditor({
     if (!blockId) return;
     const next = blocks.map((b) => (b.id === blockId ? { ...b, ...updates } : b));
     setBlocks(next);
+    setIsDirty(true);
   };
 
   const deleteBlock = (blockId: string) => {
     if (blocks.length <= 1) {
-      setBlocks([{ id: `block-${Date.now()}`, type: "paragraph", text: "" }]);
+      setBlocks([{ id: createBlockId(), type: "paragraph", text: "" }]);
       return;
     }
-    const next = blocks.filter((b) => b.id !== blockId);
-    pushHistory(next);
+    const target = blocks.find((b) => b.id === blockId);
+    if (
+      target &&
+      (target.type === "table" ||
+        target.type === "columns" ||
+        target.type === "gallery")
+    ) {
+      setDeleteConfirm({ blockId, label: target.type });
+      return;
+    }
+    pushHistory(blocks.filter((b) => b.id !== blockId));
+  };
+
+  const confirmDeleteBlock = () => {
+    if (!deleteConfirm) return;
+    if (blocks.length <= 1) {
+      setDeleteConfirm(null);
+      return;
+    }
+    pushHistory(blocks.filter((b) => b.id !== deleteConfirm.blockId));
+    setDeleteConfirm(null);
+    toast.success("Block deleted");
   };
 
   const moveBlock = (index: number, direction: "up" | "down") => {
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= blocks.length) return;
-    const next = [...blocks];
-    const [moved] = next.splice(index, 1);
-    next.splice(targetIndex, 0, moved);
-    pushHistory(next);
+    const id = blocks[index]?.id;
+    if (!id) return;
+    pushHistory(moveBlockById(blocks, id, direction));
   };
 
   // Handle image upload from computer
@@ -1816,7 +1681,7 @@ export default function AdminEditor({
     } catch (err) {
       console.error("Video upload error", err);
       updateBlock(tempVidId, { isLoading: false });
-      alert("Không thể tải video lên, vui lòng thử lại!");
+      toast.error("Không thể tải video lên, vui lòng thử lại!");
     } finally {
       setIsUploadingVideo(false);
     }
@@ -1840,9 +1705,9 @@ export default function AdminEditor({
   };
 
   // Save document
-  const handleSaveDocument = async () => {
+  const handleSaveDocument = useCallback(async () => {
     if (!title.trim()) {
-      alert("Please enter an article title!");
+      toast.error("Please enter an article title!");
       return;
     }
 
@@ -1863,8 +1728,8 @@ export default function AdminEditor({
         slug: finalSlug,
         summary: summary.trim(),
         excerpt: summary.trim(),
-        content: JSON.stringify(blocks),
-        blocks,
+        content: JSON.stringify(blocksRef.current),
+        blocks: blocksRef.current,
         thumbnail: coverImage || "/images/IMG_7098.webp",
         coverImage: coverImage || "/images/IMG_7098.webp",
         category,
@@ -1881,13 +1746,106 @@ export default function AdminEditor({
       if (onSave) {
         await onSave(payload);
       }
+      storePushVersion("Manual save");
+      setIsDirty(false);
+      toast.success("Article saved");
     } catch (err) {
       console.error("Save error", err);
-      alert("An error occurred while saving the article.");
+      toast.error("An error occurred while saving the article.");
+      throw err;
     } finally {
       setIsSaving(false);
     }
+  }, [
+    title,
+    slug,
+    summary,
+    coverImage,
+    category,
+    authorName,
+    tags,
+    isPublic,
+    metaDesc,
+    onSave,
+    postToEdit?.id,
+    storePushVersion,
+  ]);
+
+  const { status: autosaveStatus, lastSavedAt, saveNow } = useAutosave({
+    isDirty,
+    debounceMs: 4000,
+    enabled: Boolean(onSave) && Boolean(title.trim()),
+    onSave: handleSaveDocument,
+  });
+  useBeforeUnload(isDirty);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = blocks.map((b) => b.id!).filter(Boolean);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const nextIds = [...ids];
+    const [moved] = nextIds.splice(oldIndex, 1);
+    nextIds.splice(newIndex, 0, moved);
+    pushHistory(reorderBlocksByIds(blocks, nextIds));
   };
+
+  const insertSlashCommand = (type: BlogBlock["type"], extras?: Partial<BlogBlock> & { level?: number }) => {
+    const activeId = targetBlockIdRef.current;
+    const idx = activeId
+      ? findBlockIndexById(blocks, activeId)
+      : targetBlockIndexRef.current;
+    const insertAt = idx === null || idx < 0 ? blocks.length : idx + 1;
+    const fresh = createEmptyBlock(type, extras || {});
+    const next = [...blocks];
+    next.splice(insertAt, 0, fresh);
+    pushHistory(next);
+    setTargetBlockId(fresh.id || null);
+    slash.close();
+  };
+
+  // Global shortcuts: Ctrl+S, ?, Ctrl+D, move block, headings
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const meta = e.ctrlKey || e.metaKey;
+      if (meta && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        void saveNow();
+        return;
+      }
+      if (e.key === "?" && !meta && !(e.target as HTMLElement)?.closest?.("input, textarea, [contenteditable='true']")) {
+        setShowShortcuts(true);
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "d" && targetBlockIdRef.current) {
+        e.preventDefault();
+        const id = targetBlockIdRef.current;
+        const idx = findBlockIndexById(blocksRef.current, id);
+        if (idx < 0) return;
+        const copy = duplicateBlock(blocksRef.current[idx]);
+        const next = [...blocksRef.current];
+        next.splice(idx + 1, 0, copy);
+        pushHistory(next);
+        setTargetBlockId(copy.id || null);
+        return;
+      }
+      if (meta && e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown") && targetBlockIdRef.current) {
+        e.preventDefault();
+        pushHistory(
+          moveBlockById(
+            blocksRef.current,
+            targetBlockIdRef.current,
+            e.key === "ArrowUp" ? "up" : "down"
+          )
+        );
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveNow]);
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-[#100c18] text-slate-900 dark:text-[#e8dff1] transition-colors pb-20">
@@ -2580,6 +2538,88 @@ export default function AdminEditor({
                     <span className="material-symbols-outlined text-[15px]">view_column</span>
                     <span>2-Col</span>
                   </button>
+
+                  <div className="w-px h-5 bg-slate-200 dark:bg-white/10 mx-0.5" />
+
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => addBlock("callout")}
+                    className="px-2 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-white/10 border border-slate-200/60 dark:border-transparent transition-colors cursor-pointer"
+                    title="Callout"
+                  >
+                    Callout
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => addBlock("toggle")}
+                    className="px-2 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-white/10 border border-slate-200/60 dark:border-transparent transition-colors cursor-pointer"
+                    title="Toggle"
+                  >
+                    Toggle
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => addBlock("gallery")}
+                    className="px-2 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-white/10 border border-slate-200/60 dark:border-transparent transition-colors cursor-pointer"
+                    title="Gallery"
+                  >
+                    Gallery
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => addBlock("embed")}
+                    className="px-2 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-white/10 border border-slate-200/60 dark:border-transparent transition-colors cursor-pointer"
+                    title="Embed"
+                  >
+                    Embed
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setShowVersions(true)}
+                    className="px-2 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-white/10 border border-slate-200/60 dark:border-transparent transition-colors cursor-pointer"
+                    title="Version history"
+                  >
+                    History
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      const tpl = EDITOR_TEMPLATES[0];
+                      if (!tpl) return;
+                      pushHistory([...blocks, ...tpl.blocks.map((b) => ({ ...b, id: createBlockId() }))]);
+                      toast.success(`Inserted template: ${tpl.name}`);
+                    }}
+                    className="px-2 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-white/10 border border-slate-200/60 dark:border-transparent transition-colors cursor-pointer"
+                    title="Insert template"
+                  >
+                    Template
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      const blob = new Blob([JSON.stringify(blocks, null, 2)], {
+                        type: "application/json",
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `xon-article-blocks-${Date.now()}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success("Exported blocks JSON");
+                    }}
+                    className="px-2 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-white/10 border border-slate-200/60 dark:border-transparent transition-colors cursor-pointer"
+                    title="Export JSON"
+                  >
+                    Export
+                  </button>
                 </div>
               </div>
             </div>
@@ -2614,19 +2654,53 @@ export default function AdminEditor({
             </div>
 
             {/* Block Sequence Editor */}
-            <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-white/5">
+            <div
+              data-editor-canvas
+              className="relative space-y-6 pt-4 border-t border-slate-100 dark:border-white/5"
+              onDragEnter={dropMedia.onDragEnter}
+              onDragLeave={dropMedia.onDragLeave}
+              onDragOver={dropMedia.onDragOver}
+              onDrop={async (e) => {
+                e.preventDefault();
+                dropMedia.onDropEnd();
+                const files = Array.from(e.dataTransfer.files || []);
+                const images = files.filter((f) => f.type.startsWith("image/"));
+                const videos = files.filter((f) => f.type.startsWith("video/"));
+                if (images[0]) {
+                  const dt = new DataTransfer();
+                  dt.items.add(images[0]);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.files = dt.files;
+                    fileInputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+                  }
+                } else if (videos[0]) {
+                  const dt = new DataTransfer();
+                  dt.items.add(videos[0]);
+                  if (videoFileInputRef.current) {
+                    videoFileInputRef.current.files = dt.files;
+                    videoFileInputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+                  }
+                }
+              }}
+            >
+              <DropOverlay visible={dropMedia.isDragging} />
+              <DndContext
+                sensors={dndSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={blocks.map((b) => b.id!).filter(Boolean)}
+                  strategy={verticalListSortingStrategy}
+                >
               {blocks.map((block, idx) => {
                 const blockId = block.id || `block-${idx}`;
 
                 return (
+                  <SortableBlockWrapper key={blockId} id={blockId} disabled={isPreview}>
                   <div
-                    key={blockId}
-                    onClick={() => {
-                      targetBlockIndexRef.current = idx;
-                    }}
-                    onFocus={() => {
-                      targetBlockIndexRef.current = idx;
-                    }}
+                    onClick={() => setTargetBlockId(blockId)}
+                    onFocus={() => setTargetBlockId(blockId)}
                     className={`relative group/block transition-all ${
                       block.type === "paragraph" || block.type === "image" || block.type === "heading" || block.type === "video"
                         ? "p-0 bg-transparent border-none"
@@ -3064,18 +3138,73 @@ export default function AdminEditor({
                       </div>
                     )}
 
+                    {block.type === "code" && (
+                      <CodeBlockEditor
+                        block={block}
+                        onChange={(patch) => updateBlock(blockId, patch)}
+                      />
+                    )}
+
+                    {block.type === "callout" && (
+                      <CalloutBlock
+                        block={block}
+                        onChange={(patch) => updateBlock(blockId, patch)}
+                      />
+                    )}
+
+                    {block.type === "toggle" && (
+                      <ToggleBlock
+                        block={block}
+                        onChange={(patch) => updateBlock(blockId, patch)}
+                      />
+                    )}
+
+                    {block.type === "gallery" && (
+                      <GalleryBlock
+                        block={block}
+                        onChange={(patch) => updateBlock(blockId, patch)}
+                        onUploadFiles={async (files) => {
+                          const urls: string[] = [];
+                          for (const file of files) {
+                            urls.push(await uploadImageToServer(file));
+                          }
+                          return urls;
+                        }}
+                      />
+                    )}
+
+                    {block.type === "embed" && (
+                      <EmbedBlock
+                        block={block}
+                        onChange={(patch) => updateBlock(blockId, patch)}
+                      />
+                    )}
+
                     {block.type === "divider" && (
                       <hr className="my-4 border-t-2 border-dashed border-slate-200 dark:border-white/10" />
                     )}
                   </div>
+                  </SortableBlockWrapper>
                 );
               })}
+                </SortableContext>
+              </DndContext>
             </div>
           </div>
         </main>
 
         {/* Right Sidebar: Settings & Publishing Controls */}
-        <aside className="lg:col-span-4 space-y-6">
+        <aside
+          className={`lg:col-span-4 space-y-6 ${
+            isFocusMode ? "hidden" : ""
+          }`}
+        >
+          <SeoPreviewCard
+            title={title}
+            slug={slug}
+            description={metaDesc || summary}
+          />
+
           {/* Cover Image Card */}
           <div className="bg-white dark:bg-[#1a1426] rounded-3xl p-5 shadow-lg border border-slate-200 dark:border-[#2c2835] space-y-4">
             <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
@@ -3181,6 +3310,95 @@ export default function AdminEditor({
 
       {/* Prompt Modal */}
       <PromptModal {...promptModal} />
+
+      <Toaster richColors position="top-center" />
+
+      <BubbleToolbar
+        visible={bubble.visible && !isPreview}
+        top={bubble.rect?.top || 0}
+        left={bubble.rect?.left || 0}
+        isBold={isBoldActive}
+        isItalic={isItalicActive}
+        isUnderline={isUnderlineActive}
+        isStrike={isStrikethroughActive}
+        onBold={() => executeCommand("bold")}
+        onItalic={() => executeCommand("italic")}
+        onUnderline={() => executeCommand("underline")}
+        onStrike={() => executeCommand("strikeThrough")}
+        onCode={() => applyInlineCodeToSelection()}
+        onLink={() =>
+          openPrompt({
+            title: "Insert link",
+            placeholder: "https://...",
+            onConfirm: (url) => applyLinkToSelection(url),
+          })
+        }
+        onColor={() => toggleDropdown("textColor")}
+        onHighlight={() => toggleDropdown("highlight")}
+      />
+
+      <SlashCommandMenu
+        open={slash.open}
+        top={slash.position?.top || 0}
+        left={slash.position?.left || 0}
+        query={slash.query}
+        items={slash.filtered}
+        activeIndex={slash.activeIndex}
+        onHover={(i) => {
+          /* set via move when keyboard; hover updates selection visually */
+          for (let n = 0; n < Math.abs(i - slash.activeIndex); n++) {
+            slash.move(i > slash.activeIndex ? 1 : -1);
+          }
+        }}
+        onSelect={(cmd) => insertSlashCommand(cmd.type, cmd.extras)}
+        onClose={slash.close}
+      />
+
+      <EditorStatusBar
+        wordCount={wordCount}
+        readingMinutes={readingMinutes}
+        blockCount={blocks.length}
+        saveStatus={autosaveStatus === "idle" && isDirty ? "idle" : autosaveStatus}
+        lastSavedAt={lastSavedAt}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onTogglePreview={() => setIsPreview((v) => !v)}
+        onToggleFocus={() => setIsFocusMode((v) => !v)}
+        onShowShortcuts={() => setShowShortcuts(true)}
+        isPreview={isPreview}
+        isFocus={isFocusMode}
+      />
+
+      <ShortcutsHelp open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+
+      <VersionHistoryPanel
+        open={showVersions}
+        versions={storeVersions}
+        onClose={() => setShowVersions(false)}
+        onSnapshot={() => {
+          storePushVersion("Manual snapshot");
+          toast.success("Snapshot saved");
+        }}
+        onRestore={(id) => {
+          if (storeRestoreVersion(id)) {
+            const restored = useEditorBlocksStore.getState().blocks;
+            pushHistory(restored);
+            toast.success("Version restored");
+            setShowVersions(false);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="Delete block?"
+        message={`Delete this ${deleteConfirm?.label || "block"}? This cannot be undone from the trash (use Undo if needed).`}
+        confirmLabel="Delete"
+        onConfirm={confirmDeleteBlock}
+        onClose={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState } from "react";
 import { SiteSettings } from "@/types/admin";
 import { useToast } from "@/context/ToastContext";
@@ -10,7 +12,7 @@ import {
   Phone,
   Truck,
   Search,
-  Save,
+  Save
 } from "lucide-react";
 
 export default function AdminSettingsPage() {
@@ -24,7 +26,7 @@ export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/settings")
+    apiFetch("/api/settings")
       .then((res) => res.json())
       .then((json) => {
         if (json.success) setSettings(json.data);
@@ -39,14 +41,12 @@ export default function AdminSettingsPage() {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch("/api/settings", {
+const res = await apiFetch("/api/settings", {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(settings)
       });
 
       const json = await res.json();
@@ -154,7 +154,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      general: { ...settings.general, websiteName: e.target.value },
+                      general: { ...settings.general, websiteName: e.target.value }
                     })
                   }
                   className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -172,7 +172,7 @@ export default function AdminSettingsPage() {
                     onChange={(e) =>
                       setSettings({
                         ...settings,
-                        general: { ...settings.general, contactEmail: e.target.value },
+                        general: { ...settings.general, contactEmail: e.target.value }
                       })
                     }
                     className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -189,7 +189,7 @@ export default function AdminSettingsPage() {
                     onChange={(e) =>
                       setSettings({
                         ...settings,
-                        general: { ...settings.general, phone: e.target.value },
+                        general: { ...settings.general, phone: e.target.value }
                       })
                     }
                     className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -207,7 +207,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      general: { ...settings.general, address: e.target.value },
+                      general: { ...settings.general, address: e.target.value }
                     })
                   }
                   className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -233,7 +233,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      social: { ...settings.social, instagram: e.target.value },
+                      social: { ...settings.social, instagram: e.target.value }
                     })
                   }
                   className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -250,7 +250,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      social: { ...settings.social, tiktok: e.target.value },
+                      social: { ...settings.social, tiktok: e.target.value }
                     })
                   }
                   className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -267,7 +267,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      social: { ...settings.social, facebook: e.target.value },
+                      social: { ...settings.social, facebook: e.target.value }
                     })
                   }
                   className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -293,7 +293,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      contact: { ...settings.contact, hotline: e.target.value },
+                      contact: { ...settings.contact, hotline: e.target.value }
                     })
                   }
                   className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -310,7 +310,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      contact: { ...settings.contact, businessHours: e.target.value },
+                      contact: { ...settings.contact, businessHours: e.target.value }
                     })
                   }
                   placeholder="Mon - Sat: 9:00 AM - 6:00 PM PST"
@@ -341,8 +341,8 @@ export default function AdminSettingsPage() {
                         ...settings,
                         shipping: {
                           ...settings.shipping,
-                          shippingFee: Number(e.target.value),
-                        },
+                          shippingFee: Number(e.target.value)
+                        }
                       })
                     }
                     className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -362,8 +362,8 @@ export default function AdminSettingsPage() {
                         ...settings,
                         shipping: {
                           ...settings.shipping,
-                          freeShippingThreshold: Number(e.target.value),
-                        },
+                          freeShippingThreshold: Number(e.target.value)
+                        }
                       })
                     }
                     className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -393,7 +393,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      seo: { ...settings.seo, metaTitle: e.target.value },
+                      seo: { ...settings.seo, metaTitle: e.target.value }
                     })
                   }
                   className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -410,7 +410,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      seo: { ...settings.seo, metaDescription: e.target.value },
+                      seo: { ...settings.seo, metaDescription: e.target.value }
                     })
                   }
                   className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:border-amber-500 focus:bg-white"
@@ -427,7 +427,7 @@ export default function AdminSettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      seo: { ...settings.seo, ogImage: e.target.value },
+                      seo: { ...settings.seo, ogImage: e.target.value }
                     })
                   }
                   placeholder="/images/IMG_7101.webp"

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,7 +15,7 @@ import {
   ExternalLink,
   FileText,
   Search,
-  Calendar,
+  Calendar
 } from "lucide-react";
 
 export default function AdminBlogPage() {
@@ -33,7 +35,7 @@ export default function AdminBlogPage() {
       if (search) params.append("search", search);
       if (statusFilter !== "all") params.append("status", statusFilter);
 
-      const res = await fetch(`/api/blog?${params.toString()}`);
+      const res = await apiFetch(`/api/blog?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success) setBlogs(json.data);
@@ -56,11 +58,9 @@ export default function AdminBlogPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/blog/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/blog/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success(`Article "${deleteTarget.title}" deleted`);

@@ -1,8 +1,15 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AdminRole, AdminUser } from "@/types/admin";
+import { apiFetch } from "@/lib/apiClient";
 
 interface RegisterData {
   name: string;
@@ -13,17 +20,34 @@ interface RegisterData {
 
 interface AdminAuthContextType {
   user: AdminUser | null;
+  /** Opaque session flag — real JWT stays in HttpOnly cookie only */
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  register: (data: RegisterData) => Promise<{ success: boolean; message?: string }>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; message?: string }>;
+  register: (
+    data: RegisterData
+  ) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   hasRole: (roles: AdminRole[]) => boolean;
   refreshUser: () => Promise<void>;
 }
 
-const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+const AdminAuthContext = createContext<AdminAuthContextType | undefined>(
+  undefined
+);
+
+function clearLegacyLocalToken() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("admin_token");
+  } catch {
+    // ignore
+  }
+}
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -34,12 +58,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      const res = await apiFetch("/api/auth/me");
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
           setUser(json.data);
-          setToken("active-cookie-session");
+          setToken("cookie-session");
         } else {
           setUser(null);
           setToken(null);
@@ -58,13 +82,14 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    clearLegacyLocalToken();
     refreshUser();
   }, [refreshUser]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -72,12 +97,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
       const json = await res.json();
       if (res.ok && json.success && json.data) {
+        clearLegacyLocalToken();
         setUser(json.data.user);
-        const tok = json.data.token || "active-cookie-session";
-        setToken(tok);
-        if (typeof window !== "undefined" && json.data.token) {
-          localStorage.setItem("admin_token", json.data.token);
-        }
+        setToken("cookie-session");
         setIsLoading(false);
 
         const userRole = json.data.user?.role;
@@ -102,7 +124,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: RegisterData) => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await apiFetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -110,21 +132,18 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
       const json = await res.json();
       if (res.ok && json.success && json.data) {
+        clearLegacyLocalToken();
         setUser(json.data.user);
-        const tok = json.data.token || "active-cookie-session";
-        setToken(tok);
-        if (typeof window !== "undefined" && json.data.token) {
-          localStorage.setItem("admin_token", json.data.token);
-        }
+        setToken("cookie-session");
         setIsLoading(false);
-
-        // User & Wholesale registrants redirect to Home
         router.push("/");
-
         return { success: true };
       } else {
         setIsLoading(false);
-        return { success: false, message: json.message || "Failed to create account" };
+        return {
+          success: false,
+          message: json.message || "Failed to create account",
+        };
       }
     } catch (err) {
       console.error("Register request error:", err);
@@ -136,15 +155,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setIsLoading(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
       setUser(null);
       setToken(null);
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("admin_token");
-      }
+      clearLegacyLocalToken();
       setIsLoading(false);
       if (pathname.startsWith("/admin")) {
         router.push("/login");

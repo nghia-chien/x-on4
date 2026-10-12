@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import { CustomerItem, OrderItem } from "@/types/admin";
 import { useToast } from "@/context/ToastContext";
@@ -14,7 +16,7 @@ import {
   X,
   Trash2,
   ChevronLeft,
-  ChevronRight,
+  ChevronRight
 } from "lucide-react";
 
 export default function AdminCustomersPage() {
@@ -42,16 +44,14 @@ export default function AdminCustomersPage() {
   const fetchCustomers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const params = new URLSearchParams();
+const params = new URLSearchParams();
       if (search) params.append("search", search);
       if (statusFilter !== "all") params.append("status", statusFilter);
       params.append("page", page.toString());
       params.append("limit", "15");
 
-      const res = await fetch(`/api/customers?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`/api/customers?${params.toString()}`, {
+        });
 
       if (res.ok) {
         const json = await res.json();
@@ -78,10 +78,8 @@ export default function AdminCustomersPage() {
   const viewCustomerDetail = async (id: string) => {
     setIsLoadingCustomer(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/customers/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/customers/${id}`, {
+        });
       if (res.ok) {
         const json = await res.json();
         if (json.success) setSelectedCustomer(json.data);
@@ -97,11 +95,9 @@ export default function AdminCustomersPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/customers/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/customers/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success(`Customer ${deleteTarget.name} removed`);
@@ -229,7 +225,7 @@ export default function AdminCustomersPage() {
                         ? new Date(c.lastOrder).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
-                            year: "numeric",
+                            year: "numeric"
                           })
                         : "Never"}
                     </td>

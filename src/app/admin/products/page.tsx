@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,7 +16,7 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Package,
+  Package
 } from "lucide-react";
 
 export default function AdminProductsPage() {
@@ -47,7 +49,7 @@ export default function AdminProductsPage() {
       params.append("page", page.toString());
       params.append("limit", "15");
 
-      const res = await fetch(`/api/products?${params.toString()}`);
+      const res = await apiFetch(`/api/products?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
@@ -66,7 +68,7 @@ export default function AdminProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("/api/categories");
+      const res = await apiFetch("/api/categories");
       if (res.ok) {
         const json = await res.json();
         if (json.success) setCategories(json.data);
@@ -91,11 +93,9 @@ export default function AdminProductsPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/products/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/products/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success(`Product "${deleteTarget.name}" deleted`);

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { ReviewItem } from "@/types/admin";
@@ -11,7 +13,7 @@ import {
   XCircle,
   Trash2,
   Filter,
-  MessageSquare,
+  MessageSquare
 } from "lucide-react";
 
 export default function AdminReviewsPage() {
@@ -29,7 +31,7 @@ export default function AdminReviewsPage() {
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.append("status", statusFilter);
 
-      const res = await fetch(`/api/reviews?${params.toString()}`);
+      const res = await apiFetch(`/api/reviews?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success) setReviews(json.data);
@@ -50,14 +52,12 @@ export default function AdminReviewsPage() {
     newStatus: "approved" | "rejected" | "pending"
   ) => {
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/reviews/${id}`, {
+const res = await apiFetch(`/api/reviews/${id}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus })
       });
 
       if (res.ok) {
@@ -75,11 +75,9 @@ export default function AdminReviewsPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/reviews/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/reviews/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success("Review deleted");

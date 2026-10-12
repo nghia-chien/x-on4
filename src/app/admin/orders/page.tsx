@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { OrderItem, OrderStatus, PaymentStatus } from "@/types/admin";
@@ -12,7 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Trash2,
+  Trash2
 } from "lucide-react";
 
 export default function AdminOrdersPage() {
@@ -32,16 +34,14 @@ export default function AdminOrdersPage() {
   const fetchOrders = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const params = new URLSearchParams();
+const params = new URLSearchParams();
       if (search) params.append("search", search);
       if (statusFilter !== "all") params.append("status", statusFilter);
       params.append("page", page.toString());
       params.append("limit", "15");
 
-      const res = await fetch(`/api/orders?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`/api/orders?${params.toString()}`, {
+        });
 
       if (res.ok) {
         const json = await res.json();
@@ -67,14 +67,12 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/orders/${orderId}`, {
+const res = await apiFetch(`/api/orders/${orderId}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ orderStatus: newStatus }),
+        body: JSON.stringify({ orderStatus: newStatus })
       });
 
       if (res.ok) {
@@ -92,11 +90,9 @@ export default function AdminOrdersPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/orders/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/orders/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success(`Order ${deleteTarget.orderNumber} deleted`);
@@ -281,7 +277,7 @@ export default function AdminOrdersPage() {
                       {new Date(ord.createdAt).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
-                        year: "numeric",
+                        year: "numeric"
                       })}
                     </td>
 

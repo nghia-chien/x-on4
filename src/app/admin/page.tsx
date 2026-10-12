@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -20,7 +22,7 @@ import {
   CheckCircle2,
   Mail,
   Building2,
-  Layers,
+  Layers
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
@@ -32,10 +34,8 @@ export default function AdminDashboardPage() {
   const fetchStats = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/dashboard/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/dashboard/stats`, {
+        });
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
       href: "/admin/orders",
       icon: DollarSign,
       textColor: "text-emerald-700",
-      bgColor: "bg-emerald-50/80",
+      bgColor: "bg-emerald-50/80"
     },
     {
       title: "Total Orders",
@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
       href: "/admin/orders",
       icon: ShoppingBag,
       textColor: "text-[#c9776c]",
-      bgColor: "bg-rose-50/80",
+      bgColor: "bg-rose-50/80"
     },
     {
       title: "Active Products",
@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
       href: "/admin/products",
       icon: Package,
       textColor: "text-indigo-700",
-      bgColor: "bg-indigo-50/80",
+      bgColor: "bg-indigo-50/80"
     },
     {
       title: "Total Customers",
@@ -95,7 +95,7 @@ export default function AdminDashboardPage() {
       href: "/admin/customers",
       icon: Users,
       textColor: "text-sky-700",
-      bgColor: "bg-sky-50/80",
+      bgColor: "bg-sky-50/80"
     },
     {
       title: "VIP Club Members",
@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
       href: "/admin/newsletter",
       icon: Sparkles,
       textColor: "text-purple-700",
-      bgColor: "bg-purple-50/80",
+      bgColor: "bg-purple-50/80"
     },
     {
       title: "Wholesale & Leads",
@@ -113,7 +113,7 @@ export default function AdminDashboardPage() {
       href: "/admin/wholesale",
       icon: Briefcase,
       textColor: "text-amber-700",
-      bgColor: "bg-amber-50/80",
+      bgColor: "bg-amber-50/80"
     },
   ];
 

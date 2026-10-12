@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import { NewsletterSubscriberItem } from "@/types/admin";
 import { useToast } from "@/context/ToastContext";
@@ -16,7 +18,7 @@ import {
   Copy,
   Check,
   X,
-  Sparkles,
+  Sparkles
 } from "lucide-react";
 
 export default function AdminNewsletterPage() {
@@ -38,10 +40,8 @@ export default function AdminNewsletterPage() {
   const fetchNewsletter = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch("/api/newsletter", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch("/api/newsletter", {
+        });
 
       if (res.ok) {
         const json = await res.json();
@@ -73,14 +73,12 @@ export default function AdminNewsletterPage() {
 
     setIsAdding(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch("/api/newsletter", {
+const res = await apiFetch("/api/newsletter", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ email: newEmail.trim() }),
+        body: JSON.stringify({ email: newEmail.trim() })
       });
 
       const json = await res.json();
@@ -124,11 +122,9 @@ export default function AdminNewsletterPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/newsletter?id=${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/newsletter?id=${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success(`Removed ${deleteTarget.email} from VIP mailing list`);

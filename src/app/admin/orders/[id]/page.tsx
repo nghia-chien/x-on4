@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -14,7 +16,7 @@ import {
   MapPin,
   Clock,
   Save,
-  PackageCheck,
+  PackageCheck
 } from "lucide-react";
 
 export default function AdminOrderDetailPage() {
@@ -36,10 +38,8 @@ export default function AdminOrderDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    const token = localStorage.getItem("admin_token");
-    fetch(`/api/orders/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+apiFetch(`/api/orders/${id}`, {
+      })
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {
@@ -59,20 +59,18 @@ export default function AdminOrderDetailPage() {
   const handleUpdate = async () => {
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/orders/${id}`, {
+const res = await apiFetch(`/api/orders/${id}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           orderStatus,
           paymentStatus,
           trackingNumber,
           shippingAddress,
-          notes,
-        }),
+          notes
+        })
       });
 
       const json = await res.json();

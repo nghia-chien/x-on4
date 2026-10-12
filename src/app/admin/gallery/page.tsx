@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { GalleryItem } from "@/types/admin";
@@ -13,7 +15,7 @@ import {
   EyeOff,
   Image as ImageIcon,
   X,
-  Upload,
+  Upload
 } from "lucide-react";
 
 export default function AdminGalleryPage() {
@@ -41,7 +43,7 @@ export default function AdminGalleryPage() {
   const fetchGallery = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/gallery");
+      const res = await apiFetch("/api/gallery");
       if (res.ok) {
         const json = await res.json();
         if (json.success) setGallery(json.data);
@@ -87,14 +89,12 @@ export default function AdminGalleryPage() {
 
     setIsUploading(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const formData = new FormData();
+const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("/api/upload", {
+      const res = await apiFetch("/api/upload", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+        body: formData
       });
 
       if (res.ok) {
@@ -120,15 +120,14 @@ export default function AdminGalleryPage() {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const payload = {
+const payload = {
         title,
         description,
         image,
         product,
         category,
         status,
-        displayOrder: Number(displayOrder || 0),
+        displayOrder: Number(displayOrder || 0)
       };
 
       const url = editingItem ? `/api/gallery/${editingItem.id}` : "/api/gallery";
@@ -137,10 +136,9 @@ export default function AdminGalleryPage() {
       const res = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const json = await res.json();
@@ -162,11 +160,9 @@ export default function AdminGalleryPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/gallery/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/gallery/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success("Gallery item deleted");

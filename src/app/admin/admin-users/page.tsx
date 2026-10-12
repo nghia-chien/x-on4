@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import { AdminRole, AdminUser } from "@/types/admin";
 import { useAdminAuth } from "@/context/AdminAuthContext";
@@ -11,7 +13,7 @@ import {
   Edit2,
   Trash2,
   X,
-  ShieldAlert,
+  ShieldAlert
 } from "lucide-react";
 
 export default function AdminUsersPage() {
@@ -38,10 +40,8 @@ export default function AdminUsersPage() {
   const fetchAdmins = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch("/api/admin-users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch("/api/admin-users", {
+        });
 
       if (res.ok) {
         const json = await res.json();
@@ -110,8 +110,7 @@ export default function AdminUsersPage() {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const payload: {
+const payload: {
         name: string;
         email?: string;
         password?: string;
@@ -120,7 +119,7 @@ export default function AdminUsersPage() {
       } = {
         name,
         role,
-        status,
+        status
       };
 
       if (!editingAdmin) {
@@ -138,10 +137,9 @@ export default function AdminUsersPage() {
       const res = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const json = await res.json();
@@ -163,11 +161,9 @@ export default function AdminUsersPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/admin-users/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/admin-users/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       const json = await res.json();
       if (res.ok && json.success) {
@@ -284,7 +280,7 @@ export default function AdminUsersPage() {
                             month: "short",
                             day: "numeric",
                             hour: "2-digit",
-                            minute: "2-digit",
+                            minute: "2-digit"
                           })
                         : "Never"}
                     </td>

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -19,7 +21,7 @@ import {
   Layers,
   Scissors,
   Ruler,
-  ShoppingBag,
+  ShoppingBag
 } from "lucide-react";
 
 interface ProductFormProps {
@@ -130,7 +132,7 @@ export function getKnownColorHex(name: string): string {
     magenta: "#d946ef",
     plum: "#701a75",
     peach: "#fbcfe8",
-    maroon: "#881337",
+    maroon: "#881337"
   };
 
   for (const [key, hex] of Object.entries(KNOWN_COLORS)) {
@@ -276,7 +278,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/categories")
+    apiFetch("/api/categories")
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) setCategories(data.data);
@@ -291,14 +293,12 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
 
     setIsCreatingCategory(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch("/api/categories", {
+const res = await apiFetch("/api/categories", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ name: trimmed }),
+        body: JSON.stringify({ name: trimmed })
       });
 
       const json = await res.json();
@@ -448,17 +448,15 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
     let failedCount = 0;
 
     try {
-      const token = localStorage.getItem("admin_token");
-      await Promise.all(
+await Promise.all(
         fileList.map(async (file) => {
           try {
             const formData = new FormData();
             formData.append("file", file);
 
-            const res = await fetch("/api/upload", {
+            const res = await apiFetch("/api/upload", {
               method: "POST",
-              headers: { Authorization: `Bearer ${token}` },
-              body: formData,
+              body: formData
             });
 
             if (res.ok) {
@@ -551,8 +549,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
 
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const finalSlug = slug.trim() || generateSlug(trimmedName) || `product-${Date.now()}`;
+const finalSlug = slug.trim() || generateSlug(trimmedName) || `product-${Date.now()}`;
       const payload: Partial<ProductItem> = {
         name: trimmedName,
         slug: finalSlug,
@@ -579,7 +576,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
         bestSeller,
         status,
         images: images.length > 0 ? images : ["/images/IMG_7098.webp"],
-        thumbnail: thumbnail || images[0] || "/images/IMG_7098.webp",
+        thumbnail: thumbnail || images[0] || "/images/IMG_7098.webp"
       };
 
       const url = isEdit && initialData ? `/api/products/${initialData.id}` : "/api/products";
@@ -588,10 +585,9 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
       const res = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const json = await res.json();
@@ -906,7 +902,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                         className="w-3.5 h-3.5 rounded-full inline-block shrink-0 shadow-2xs"
                         style={{
                           background: c.hex,
-                          border: c.border ? "1px solid #d4d4d8" : "none",
+                          border: c.border ? "1px solid #d4d4d8" : "none"
                         }}
                       />
                       <span>{c.name}</span>

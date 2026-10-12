@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import { WholesaleRequestItem } from "@/types/admin";
 import { useToast } from "@/context/ToastContext";
@@ -15,7 +17,7 @@ import {
   Save,
   CheckCircle2,
   X,
-  Eye,
+  Eye
 } from "lucide-react";
 
 export default function AdminWholesalePage() {
@@ -37,13 +39,11 @@ export default function AdminWholesalePage() {
   const fetchWholesale = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const params = new URLSearchParams();
+const params = new URLSearchParams();
       if (statusFilter !== "all") params.append("status", statusFilter);
 
-      const res = await fetch(`/api/wholesale?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`/api/wholesale?${params.toString()}`, {
+        });
 
       if (res.ok) {
         const json = await res.json();
@@ -72,14 +72,12 @@ export default function AdminWholesalePage() {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/wholesale/${activeItem.id}`, {
+const res = await apiFetch(`/api/wholesale/${activeItem.id}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ status, adminNotes }),
+        body: JSON.stringify({ status, adminNotes })
       });
 
       const json = await res.json();
@@ -101,11 +99,9 @@ export default function AdminWholesalePage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/wholesale/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/wholesale/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success("Wholesale lead removed");

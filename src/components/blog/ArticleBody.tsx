@@ -17,7 +17,11 @@ export interface BlogBlock {
     | "video"
     | "divider"
     | "code"
-    | "columns";
+    | "columns"
+    | "callout"
+    | "toggle"
+    | "gallery"
+    | "embed";
   level?: number;
   text?: string;
   align?: "left" | "center" | "right" | "justify";
@@ -33,7 +37,10 @@ export interface BlogBlock {
   headers?: string[];
   rows?: string[][];
   code?: string;
+  language?: string;
   layout?: "50-50" | "60-40" | "40-60" | "70-30" | "30-70";
+  /** Extended column presets used by the professional editor */
+  columnLayout?: "50-50" | "33-67" | "67-33" | "33-33-33" | "25-75";
   leftTitle?: string;
   leftType?: "text" | "image";
   leftText?: string;
@@ -47,6 +54,16 @@ export interface BlogBlock {
   rightImageCaption?: string;
   rightImageHeight?: string;
   isLoading?: boolean;
+  /** Callout / toggle / gallery / embed */
+  calloutVariant?: "info" | "warn" | "success" | "error";
+  toggleTitle?: string;
+  toggleOpen?: boolean;
+  galleryUrls?: string[];
+  embedProvider?: "youtube" | "twitter" | "instagram" | "generic";
+  embedHtml?: string;
+  /** Per-block chrome */
+  padding?: "compact" | "normal" | "spacious";
+  bgStyle?: "transparent" | "soft" | "card" | "dark";
 }
 
 export function formatRichText(raw?: string): string {
@@ -420,6 +437,98 @@ export default function ArticleBody({
                     <code>{block.code || block.text}</code>
                   </pre>
                 </div>
+              );
+            }
+
+            if (block.type === "callout" && block.text) {
+              const variant = block.calloutVariant || "info";
+              const styles =
+                variant === "warn"
+                  ? "bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-100"
+                  : variant === "success"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-100"
+                    : variant === "error"
+                      ? "bg-rose-50 border-rose-200 text-rose-900 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-100"
+                      : "bg-sky-50 border-sky-200 text-sky-900 dark:bg-sky-950/40 dark:border-sky-800 dark:text-sky-100";
+              return (
+                <aside
+                  key={block.id || idx}
+                  className={`my-6 rounded-2xl border p-4 text-sm leading-relaxed ${styles}`}
+                >
+                  {block.text}
+                </aside>
+              );
+            }
+
+            if (block.type === "toggle") {
+              return (
+                <details
+                  key={block.id || idx}
+                  className="my-4 rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden"
+                  open={block.toggleOpen !== false}
+                >
+                  <summary className="px-4 py-3 cursor-pointer font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-white/5">
+                    {block.toggleTitle || "Details"}
+                  </summary>
+                  <div
+                    className="px-4 py-3 text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: formatRichText(block.text || ""),
+                    }}
+                  />
+                </details>
+              );
+            }
+
+            if (block.type === "gallery" && block.galleryUrls?.length) {
+              return (
+                <div
+                  key={block.id || idx}
+                  className="my-8 grid grid-cols-2 sm:grid-cols-3 gap-2"
+                >
+                  {block.galleryUrls.map((url, gIdx) => (
+                    <OptimizedImage
+                      key={`${url}-${gIdx}`}
+                      src={url}
+                      alt={block.caption || `Gallery ${gIdx + 1}`}
+                      containerClassName="aspect-square rounded-xl overflow-hidden"
+                      className="w-full h-full object-cover"
+                    />
+                  ))}
+                </div>
+              );
+            }
+
+            if (block.type === "embed" && block.url) {
+              const isYt =
+                block.embedProvider === "youtube" ||
+                block.url.includes("youtube") ||
+                block.url.includes("youtu.be");
+              return (
+                <figure
+                  key={block.id || idx}
+                  className="my-8 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10"
+                >
+                  {isYt ? (
+                    <div className="aspect-video bg-black">
+                      <iframe
+                        src={formatVideoEmbedUrl(block.url)}
+                        title={block.caption || "Embed"}
+                        className="w-full h-full border-0"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <a
+                      href={block.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-4 text-sm text-sky-600 hover:underline break-all"
+                    >
+                      {block.url}
+                    </a>
+                  )}
+                </figure>
               );
             }
 

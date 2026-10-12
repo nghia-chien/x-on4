@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { CategoryItem } from "@/types/admin";
@@ -11,7 +13,7 @@ import {
   Trash2,
   Layers,
   X,
-  Upload,
+  Upload
 } from "lucide-react";
 
 export default function AdminCategoriesPage() {
@@ -37,7 +39,7 @@ export default function AdminCategoriesPage() {
   const fetchCategories = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/categories");
+      const res = await apiFetch("/api/categories");
       if (res.ok) {
         const json = await res.json();
         if (json.success) setCategories(json.data);
@@ -84,14 +86,13 @@ export default function AdminCategoriesPage() {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const payload = {
+const payload = {
         name,
         slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         description,
         image,
         status,
-        displayOrder: Number(displayOrder || 0),
+        displayOrder: Number(displayOrder || 0)
       };
 
       const url = editingCategory
@@ -102,10 +103,9 @@ export default function AdminCategoriesPage() {
       const res = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const json = await res.json();
@@ -127,11 +127,9 @@ export default function AdminCategoriesPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/categories/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const res = await apiFetch(`/api/categories/${deleteTarget.id}`, {
+        method: "DELETE"
+        });
 
       if (res.ok) {
         success(`Category "${deleteTarget.name}" deleted`);

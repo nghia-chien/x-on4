@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/apiClient";
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -18,7 +20,7 @@ import {
   ChevronRight,
   X,
   ExternalLink,
-  Users,
+  Users
 } from "lucide-react";
 import { AdminRole } from "@/types/admin";
 
@@ -33,7 +35,7 @@ export function AdminSidebar({
   isCollapsed,
   setIsCollapsed,
   isMobileOpen,
-  setIsMobileOpen,
+  setIsMobileOpen
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const { user, logout, hasRole } = useAdminAuth();
@@ -46,20 +48,13 @@ export function AdminSidebar({
     wholesale: 0,
     vipClub: 0,
     contact: 0,
-    orders: 0,
+    orders: 0
   });
 
   React.useEffect(() => {
     async function fetchCounts() {
       try {
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("admin_token")
-            : null;
-        const res = await fetch("/api/admin/sidebar-counts", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          credentials: "include",
-        });
+        const res = await apiFetch("/api/admin/sidebar-counts");
         if (res.ok) {
           const json = await res.json();
           if (json.success && json.data) {

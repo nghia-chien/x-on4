@@ -70,13 +70,13 @@ export async function POST(req: NextRequest) {
       {
         success: true,
         data: {
-          token,
           user: safeUser,
         },
       },
       { status: 201 }
     );
 
+    // Session lives only in HttpOnly cookie — do not return JWT to JS
     response.cookies.set("admin_token", token, AUTH_COOKIE);
 
     return response;

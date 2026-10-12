@@ -92,9 +92,10 @@ export async function POST(req: NextRequest) {
     }
 
     const token = generateToken(safeUser);
+    // Session lives only in HttpOnly cookie — do not return JWT to JS
     const response = NextResponse.json({
       success: true,
-      data: { token, user: safeUser },
+      data: { user: safeUser },
     });
     response.cookies.set("admin_token", token, AUTH_COOKIE);
     return response;
