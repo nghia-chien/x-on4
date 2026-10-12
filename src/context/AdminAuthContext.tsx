@@ -81,12 +81,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
 
         const userRole = json.data.user?.role;
-        if (
-          userRole === "Super Admin" ||
-          userRole === "Administrator" ||
-          userRole === "Admin" ||
-          userRole === "Editor"
-        ) {
+        if (userRole === "Admin") {
           router.push("/admin");
         } else {
           router.push("/");
@@ -162,9 +157,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const hasRole = useCallback(
     (allowedRoles: AdminRole[]) => {
       if (!user) return false;
-      if (user.role === "Super Admin" || user.role === "Administrator") {
-        return true;
-      }
       return allowedRoles.includes(user.role);
     },
     [user]

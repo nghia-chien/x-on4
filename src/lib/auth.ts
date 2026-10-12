@@ -4,7 +4,19 @@ import bcrypt from "bcryptjs";
 import { AdminRole, AdminUser } from "@/types/admin";
 import { DataStore } from "./dataStore";
 
-const JWT_SECRET = process.env.JWT_SECRET || "xon-nail-secret-key-production-2026-super-secure";
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    "[SECURITY CRITICAL] JWT_SECRET environment variable is missing. The server cannot start without a secure secret key configured."
+  );
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Staff roles derived from AdminRole definition in src/types/admin.ts
+// Only "Admin" is staff; "Customer" and "Wholesale" are non-staff.
+export const STAFF_ROLES: AdminRole[] = [
+  "Admin",
+];
 
 export interface JWTPayload {
   userId: string;
@@ -67,21 +79,19 @@ export async function requireAuth(
     if (payload) {
       const user = DataStore.getAdminById(payload.userId);
       if (user && user.status === "active") {
-        if (allowedRoles && allowedRoles.length > 0) {
-          const hasPermission =
-            user.role === "Super Admin" ||
-            user.role === "Administrator" ||
-            allowedRoles.includes(user.role);
+        // DEFAULT-DENY: If allowedRoles is not specified, default strictly to STAFF_ROLES
+        const effectiveAllowedRoles = allowedRoles && allowedRoles.length > 0 ? allowedRoles : STAFF_ROLES;
 
-          if (!hasPermission) {
-            return {
-              user: null,
-              errorResponse: NextResponse.json(
-                { success: false, message: "Forbidden: Insufficient permissions" },
-                { status: 403 }
-              ),
-            };
-          }
+        const hasPermission = effectiveAllowedRoles.includes(user.role);
+
+        if (!hasPermission) {
+          return {
+            user: null,
+            errorResponse: NextResponse.json(
+              { success: false, message: "Forbidden: Insufficient permissions" },
+              { status: 403 }
+            ),
+          };
         }
         return { user, errorResponse: null };
       }

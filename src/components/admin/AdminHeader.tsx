@@ -107,7 +107,7 @@ export function AdminHeader({ onOpenMobileMenu }: AdminHeaderProps) {
                     <span>Store Settings</span>
                   </Link>
 
-                  {user.role === "Super Admin" && (
+                  {user.role === "Admin" && (
                     <Link
                       href="/admin/admin-users"
                       onClick={() => setShowProfileMenu(false)}

@@ -3,7 +3,7 @@ import { hashPassword, requireAuth } from "@/lib/auth";
 import { DataStore } from "@/lib/dataStore";
 
 export async function GET(req: NextRequest) {
-  const { errorResponse } = await requireAuth(req, ["Super Admin"]);
+  const { errorResponse } = await requireAuth(req, ["Admin"]);
   if (errorResponse) return errorResponse;
 
   const admins = DataStore.getAdmins();
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { errorResponse } = await requireAuth(req, ["Super Admin"]);
+  const { errorResponse } = await requireAuth(req, ["Admin"]);
   if (errorResponse) return errorResponse;
 
   try {
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       name,
       email,
       passwordHash,
-      role: role || "Editor",
+      role: role || "Customer",
       status: status || "active",
     });
 

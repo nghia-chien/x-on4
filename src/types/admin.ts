@@ -1,10 +1,7 @@
 export type AdminRole =
-  | "Administrator"
-  | "Wholesale Partner"
-  | "Retail Customer"
-  | "Super Admin"
   | "Admin"
-  | "Editor";
+  | "Customer"
+  | "Wholesale";
 
 export interface OAuthAccount {
   provider: "google" | "facebook";

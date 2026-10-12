@@ -7,7 +7,7 @@ export async function PUT(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params;
-  const { errorResponse } = await requireAuth(req, ["Super Admin"]);
+  const { errorResponse } = await requireAuth(req, ["Admin"]);
   if (errorResponse) return errorResponse;
 
   try {
@@ -16,7 +16,7 @@ export async function PUT(
 
     const updateData: {
       name?: string;
-      role?: "Super Admin" | "Admin" | "Editor";
+      role?: "Admin" | "Customer" | "Wholesale";
       status?: "active" | "inactive";
       passwordHash?: string;
     } = {};
@@ -28,11 +28,31 @@ export async function PUT(
       updateData.passwordHash = await hashPassword(password);
     }
 
-    const updated = DataStore.updateAdmin(params.id, updateData);
-    if (!updated) {
+    const target = DataStore.getAdminById(params.id);
+    if (!target) {
       return NextResponse.json(
         { success: false, message: "Admin user not found" },
         { status: 404 }
+      );
+    }
+
+    if (target.role === "Admin") {
+      if ((role && role !== "Admin") || (status && status === "inactive")) {
+        const adminCount = DataStore.getAdmins().filter((u) => u.role === "Admin" && u.status === "active").length;
+        if (adminCount <= 1) {
+          return NextResponse.json(
+            { success: false, message: "Cannot demote or deactivate the last active Admin account" },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    const updated = DataStore.updateAdmin(params.id, updateData);
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, message: "Admin user not found or operation rejected" },
+        { status: 400 }
       );
     }
 
@@ -51,8 +71,16 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params;
-  const { user, errorResponse } = await requireAuth(req, ["Super Admin"]);
+  const { user, errorResponse } = await requireAuth(req, ["Admin"]);
   if (errorResponse) return errorResponse;
+
+  const target = DataStore.getAdminById(params.id);
+  if (!target) {
+    return NextResponse.json(
+      { success: false, message: "Admin user not found" },
+      { status: 404 }
+    );
+  }
 
   // Prevent self deletion
   if (user?.id === params.id) {
@@ -62,11 +90,21 @@ export async function DELETE(
     );
   }
 
+  if (target.role === "Admin") {
+    const adminCount = DataStore.getAdmins().filter((u) => u.role === "Admin").length;
+    if (adminCount <= 1) {
+      return NextResponse.json(
+        { success: false, message: "Cannot delete the last Admin account" },
+        { status: 400 }
+      );
+    }
+  }
+
   const success = DataStore.deleteAdmin(params.id);
   if (!success) {
     return NextResponse.json(
-      { success: false, message: "Admin user not found" },
-      { status: 404 }
+      { success: false, message: "Admin user not found or operation rejected" },
+      { status: 400 }
     );
   }
 

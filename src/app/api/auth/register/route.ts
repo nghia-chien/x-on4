@@ -37,14 +37,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // SECURITY ENFORCEMENT: Public registration ALWAYS assigns "Retail Customer" role.
+    // SECURITY ENFORCEMENT: Public registration ALWAYS assigns "Customer" role.
     // Ignores any role property passed in the request body to prevent privilege escalation.
     const passwordHash = await hashPassword(password);
     const newAdmin = DataStore.createAdmin({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       passwordHash,
-      role: "Retail Customer",
+      role: "Customer",
       status: "active",
     });
 

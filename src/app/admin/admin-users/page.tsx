@@ -10,8 +10,6 @@ import {
   Plus,
   Edit2,
   Trash2,
-  Lock,
-  User,
   X,
   ShieldAlert,
 } from "lucide-react";
@@ -62,8 +60,8 @@ export default function AdminUsersPage() {
     fetchAdmins();
   }, [fetchAdmins]);
 
-  // If user is not Administrator / Super Admin, show access denied
-  if (!hasRole(["Administrator", "Super Admin"])) {
+  // If user is not Admin, show access denied
+  if (!hasRole(["Admin"])) {
     return (
       <div className="bg-white rounded-3xl p-12 text-center border border-neutral-200/80 shadow-xs max-w-lg mx-auto mt-12">
         <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -73,7 +71,7 @@ export default function AdminUsersPage() {
           Access Restricted
         </h2>
         <p className="text-xs text-neutral-500 mb-6">
-          Only accounts with the <strong>Administrator</strong> role have permission to view and manage administrator credentials.
+          Only accounts with the <strong>Admin</strong> role have permission to view and manage administrator credentials.
         </p>
       </div>
     );
@@ -192,10 +190,10 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-neutral-900 tracking-tight">
-            Administrator Accounts
+            Admin Accounts
           </h1>
           <p className="text-xs sm:text-sm text-neutral-500 mt-1">
-            Manage administrative team members and role-based permissions (Super Admin only).
+            Manage administrative team members and role-based permissions (Admin only).
           </p>
         </div>
 
@@ -255,11 +253,11 @@ export default function AdminUsersPage() {
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
                         className={`px-2.5 py-0.5 rounded-md font-bold text-[10px] uppercase inline-block ${
-                          adm.role === "Administrator" || adm.role === "Super Admin"
+                          adm.role === "Admin"
                             ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                            : adm.role === "Wholesale Partner"
+                            : adm.role === "Wholesale"
                             ? "bg-amber-50 text-amber-700 border border-amber-200"
-                            : adm.role === "Retail Customer"
+                            : adm.role === "Customer"
                             ? "bg-pink-50 text-pink-700 border border-pink-200"
                             : "bg-neutral-100 text-neutral-700 border border-neutral-200"
                         }`}
@@ -393,10 +391,9 @@ export default function AdminUsersPage() {
                     onChange={(e) => setRole(e.target.value as AdminRole)}
                     className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-800 focus:outline-none focus:border-indigo-500 focus:bg-white"
                   >
-                    <option value="Administrator">Administrator (Full Access)</option>
-                    <option value="Wholesale Partner">Wholesale Partner (B2B)</option>
-                    <option value="Retail Customer">Retail Customer (VIP Orders)</option>
-                    <option value="Editor">Editor (Products & Content)</option>
+                    <option value="Admin">Admin (Full Access)</option>
+                    <option value="Wholesale">Wholesale (B2B)</option>
+                    <option value="Customer">Customer (VIP Orders)</option>
                   </select>
                 </div>
 

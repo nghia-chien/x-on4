@@ -75,8 +75,8 @@ export async function GET(req: NextRequest) {
     let userToLogin;
 
     if (existingUser) {
-      // NEVER allow merging into an Admin / Editor role
-      if (existingUser.role === "Administrator" || existingUser.role === "Super Admin" || existingUser.role === "Editor") {
+      // NEVER allow merging into an Admin role
+      if (existingUser.role === "Admin") {
         const errorMsg = encodeURIComponent("Security Block: Social login is strictly prohibited for Admin accounts.");
         return NextResponse.redirect(`${siteUrl}/login?error=${errorMsg}`);
       }
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
       const newUser = DataStore.createAdmin({
         name,
         email,
-        role: "Retail Customer",
+        role: "Customer",
         status: "active",
         avatar,
         accounts: [{ provider: "google", providerAccountId, emailVerified }],

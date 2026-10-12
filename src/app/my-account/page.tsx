@@ -31,13 +31,7 @@ export default function MyAccountPage() {
 
   // Redirect admin users immediately to admin dashboard
   useEffect(() => {
-    if (
-      user &&
-      (user.role === "Super Admin" ||
-        user.role === "Administrator" ||
-        user.role === "Admin" ||
-        user.role === "Editor")
-    ) {
+    if (user && user.role === "Admin") {
       router.push("/admin");
     }
   }, [user, router]);
@@ -86,7 +80,7 @@ export default function MyAccountPage() {
       email: regEmail,
       name: regName || regEmail.split("@")[0],
       password: regPassword,
-      role: "Retail Customer",
+      role: "Customer",
     });
 
     if (!res.success) {

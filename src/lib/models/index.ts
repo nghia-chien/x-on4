@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import { Schema, model, models } from "mongoose";
 
 // 1. Admin User Schema
 const AdminUserSchema = new Schema(
@@ -6,7 +6,11 @@ const AdminUserSchema = new Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ["Super Admin", "Admin", "Editor"], default: "Editor" },
+    role: {
+      type: String,
+      enum: ["Admin", "Customer", "Wholesale"],
+      default: "Admin",
+    },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
     lastLogin: { type: Date },
   },
@@ -258,6 +262,19 @@ const SettingsSchema = new Schema(
   { timestamps: true }
 );
 
+// 13. Contact Message Schema
+const ContactMessageSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, default: "" },
+    subject: { type: String, default: "" },
+    message: { type: String, required: true },
+    status: { type: String, enum: ["New", "Read", "Replied", "Archived"], default: "New" },
+  },
+  { timestamps: true }
+);
+
 export const AdminUserModel = models.AdminUser || model("AdminUser", AdminUserSchema);
 export const ProductModel = models.Product || model("Product", ProductSchema);
 export const CategoryModel = models.Category || model("Category", CategorySchema);
@@ -270,3 +287,4 @@ export const WholesaleRequestModel = models.WholesaleRequest || model("Wholesale
 export const BlogPostModel = models.BlogPost || model("BlogPost", BlogPostSchema);
 export const NewsletterModel = models.Newsletter || model("Newsletter", NewsletterSchema);
 export const SettingsModel = models.Settings || model("Settings", SettingsSchema);
+export const ContactMessageModel = models.ContactMessage || model("ContactMessage", ContactMessageSchema);

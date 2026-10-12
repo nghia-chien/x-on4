@@ -18,8 +18,6 @@ import {
   Clock,
   ArrowRight,
   User,
-  LogIn,
-  UserPlus,
   LogOut,
   ShieldCheck,
   ChevronRight,
@@ -76,10 +74,7 @@ export function Header() {
       return;
     }
     if (
-      authUser.role === "Super Admin" ||
-      authUser.role === "Administrator" ||
-      authUser.role === "Admin" ||
-      authUser.role === "Editor"
+      authUser.role === "Admin"
     ) {
       router.push("/admin");
     } else {
@@ -383,10 +378,7 @@ export function Header() {
                   <span>My Account</span>
                 </Link>
 
-                {(authUser.role === "Super Admin" ||
-                  authUser.role === "Administrator" ||
-                  authUser.role === "Admin" ||
-                  authUser.role === "Editor") && (
+                {authUser.role === "Admin" && (
                     <Link
                       href="/admin"
                       onClick={() => {

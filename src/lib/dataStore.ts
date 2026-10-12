@@ -1,6 +1,5 @@
 import bcrypt from "bcryptjs";
 import {
-  AdminUser,
   AdminUserWithPassword,
   BlogPostItem,
   CategoryItem,
@@ -49,9 +48,9 @@ function initMemoryStore(): MemoryStore {
   const initialAdmins: AdminUserWithPassword[] = [
     {
       id: "admin-1",
-      name: "Master Administrator",
+      name: "Master Admin",
       email: "admin@xonails.com",
-      role: "Administrator",
+      role: "Admin",
       status: "active",
       passwordHash,
       createdAt: new Date().toISOString(),
@@ -59,9 +58,9 @@ function initMemoryStore(): MemoryStore {
     },
     {
       id: "admin-2",
-      name: "Wholesale Partner (B2B)",
+      name: "Wholesale User",
       email: "wholesale@xonails.com",
-      role: "Wholesale Partner",
+      role: "Wholesale",
       status: "active",
       passwordHash,
       createdAt: new Date().toISOString(),
@@ -69,9 +68,9 @@ function initMemoryStore(): MemoryStore {
     },
     {
       id: "admin-3",
-      name: "VIP Retail Customer",
+      name: "VIP Customer",
       email: "customer@xonails.com",
-      role: "Retail Customer",
+      role: "Customer",
       status: "active",
       passwordHash,
       createdAt: new Date().toISOString(),
@@ -132,7 +131,9 @@ function initMemoryStore(): MemoryStore {
     },
   ];
 
-  const initialProducts: ProductItem[] = productsJson.map((p, idx) => ({
+  const initialProducts: ProductItem[] = (
+    (productsJson as Array<{ id?: string; title?: string; slug?: string; image?: string; category?: string }>) || []
+  ).map((p, idx) => ({
     id: p.id || `prod-${idx + 1}`,
     name: p.title || `X-ON Press-On Nails #${7098 + idx}`,
     slug: p.slug || `xo-${7098 + idx}`,
@@ -637,6 +638,11 @@ export const DataStore = {
     const store = getStore();
     const index = store.adminUsers.findIndex((u) => u.id === id);
     if (index === -1) return null;
+    // Guard: cannot demote the last Admin
+    if (store.adminUsers[index].role === "Admin" && data.role && data.role !== "Admin") {
+      const adminCount = store.adminUsers.filter((u) => u.role === "Admin").length;
+      if (adminCount <= 1) return null;
+    }
     store.adminUsers[index] = { ...store.adminUsers[index], ...data };
     const { passwordHash: _, ...rest } = store.adminUsers[index];
     return rest;
@@ -645,6 +651,11 @@ export const DataStore = {
     const store = getStore();
     const index = store.adminUsers.findIndex((u) => u.id === id);
     if (index === -1) return false;
+    // Guard: cannot delete the last Admin
+    if (store.adminUsers[index].role === "Admin") {
+      const adminCount = store.adminUsers.filter((u) => u.role === "Admin").length;
+      if (adminCount <= 1) return false;
+    }
     store.adminUsers.splice(index, 1);
     return true;
   },

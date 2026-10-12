@@ -8,7 +8,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const { errorResponse } = await requireAuth(req, ["Super Admin", "Admin"]);
+  const { errorResponse } = await requireAuth(req, ["Admin"]);
   if (errorResponse) return errorResponse;
 
   try {

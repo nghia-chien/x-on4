@@ -5,22 +5,23 @@ import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminHeader } from "./AdminHeader";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading } = useAdminAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const isPublicAuthPage = false;
-
   useEffect(() => {
-    if (!isLoading && !user && !isPublicAuthPage) {
-      router.push("/login");
+    if (!isLoading) {
+      if (!user) {
+        router.push("/login");
+      } else if (user.role !== "Admin") {
+        router.push("/my-account");
+      }
     }
-  }, [isLoading, user, isPublicAuthPage, router]);
+  }, [isLoading, user, router]);
 
   if (isLoading) {
     return (
@@ -33,13 +34,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If on login or register page, render clean full-page auth screen without sidebar
-  if (isPublicAuthPage) {
-    return <>{children}</>;
-  }
-
-  // If not logged in, render null while redirecting
-  if (!user) {
+  // If not logged in or not an Admin, render null while redirecting
+  if (!user || user.role !== "Admin") {
     return null;
   }
 

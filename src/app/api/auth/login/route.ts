@@ -14,8 +14,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Constant-time dummy hash to mitigate timing-based user enumeration
+    const DUMMY_HASH = "$2b$10$wT5iKz9r5eN2i3mO5uXp7OG4t3Zq5l0o9y4z3x2w1v0u9t8s7r6q5";
+
     const user = DataStore.getAdminByEmail(email);
     if (!user) {
+      await verifyPassword(password, DUMMY_HASH);
       return NextResponse.json(
         { success: false, message: "Invalid email or password" },
         { status: 401 }
@@ -24,12 +28,13 @@ export async function POST(req: NextRequest) {
 
     if (user.status !== "active") {
       return NextResponse.json(
-        { success: false, message: "Account is inactive. Please contact Super Admin." },
+        { success: false, message: "Account is inactive. Please contact Admin." },
         { status: 403 }
       );
     }
 
     if (!user.passwordHash) {
+      await verifyPassword(password, DUMMY_HASH);
       return NextResponse.json(
         { success: false, message: "Invalid email or password" },
         { status: 401 }

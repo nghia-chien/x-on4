@@ -19,7 +19,6 @@ import {
   X,
   ExternalLink,
   Users,
-  ShieldAlert,
 } from "lucide-react";
 import { AdminRole } from "@/types/admin";
 
@@ -76,14 +75,14 @@ export function AdminSidebar({
     exact?: boolean;
     roles?: AdminRole[];
   }[] = [
-    { label: "Dashboard", href: "/admin", icon: Home, exact: true },
-    { label: "Products", href: "/admin/products", icon: ShoppingBag, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
-    { label: "Orders", href: "/admin/orders", icon: ShoppingCart, roles: ["Super Admin", "Administrator", "Admin"] },
-    { label: "Wholesale", href: "/admin/wholesale", icon: Briefcase, roles: ["Super Admin", "Administrator", "Admin", "Wholesale Partner"] },
-    { label: "Journal", href: "/admin/blog", icon: FileText, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
-    { label: "VIP Club", href: "/admin/newsletter", icon: Sparkles, roles: ["Super Admin", "Administrator", "Admin"] },
-    { label: "Inquiries", href: "/admin/contact", icon: Mail, roles: ["Super Admin", "Administrator", "Admin", "Editor"] },
-    { label: "Admin Users", href: "/admin/admin-users", icon: Users, roles: ["Super Admin", "Administrator"] },
+    { label: "Dashboard", href: "/admin", icon: Home, exact: true, roles: ["Admin"] },
+    { label: "Products", href: "/admin/products", icon: ShoppingBag, roles: ["Admin"] },
+    { label: "Orders", href: "/admin/orders", icon: ShoppingCart, roles: ["Admin"] },
+    { label: "Wholesale", href: "/admin/wholesale", icon: Briefcase, roles: ["Admin"] },
+    { label: "Journal", href: "/admin/blog", icon: FileText, roles: ["Admin"] },
+    { label: "VIP Club", href: "/admin/newsletter", icon: Sparkles, roles: ["Admin"] },
+    { label: "Inquiries", href: "/admin/contact", icon: Mail, roles: ["Admin"] },
+    { label: "Admin Users", href: "/admin/admin-users", icon: Users, roles: ["Admin"] },
   ];
 
   const getBadgeCount = (label: string) => {
