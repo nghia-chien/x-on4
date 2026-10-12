@@ -1,20 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DataStore } from "@/lib/dataStore";
 import { generateToken, hashPassword } from "@/lib/auth";
+import {
+  createAdmin,
+  getAdminByEmail,
+  getAdminById,
+  MongoUnavailableError,
+} from "@/lib/adminUserRepository";
+import { AUTH_COOKIE } from "@/lib/csrf";
+import { apiError } from "@/lib/apiError";
+import { isValidEmail, sanitizePlainText } from "@/lib/sanitize";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, password } = body;
+    const name = sanitizePlainText(String(body.name || ""), 100);
+    const email = sanitizePlainText(String(body.email || ""), 254).toLowerCase();
+    const password = String(body.password || "");
 
-    if (!name || name.trim().length < 2) {
+    if (!name || name.length < 2) {
       return NextResponse.json(
         { success: false, message: "Full name must be at least 2 characters long" },
         { status: 400 }
       );
     }
 
-    if (!email || !email.includes("@")) {
+    if (!email || !isValidEmail(email)) {
       return NextResponse.json(
         { success: false, message: "A valid email address is required" },
         { status: 400 }
@@ -28,8 +38,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if email already exists
-    const existingUser = DataStore.getAdminByEmail(email.trim());
+    const existingUser = await getAdminByEmail(email);
     if (existingUser) {
       return NextResponse.json(
         { success: false, message: "An account with this email address already exists" },
@@ -37,18 +46,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // SECURITY ENFORCEMENT: Public registration ALWAYS assigns "Customer" role.
-    // Ignores any role property passed in the request body to prevent privilege escalation.
+    // Public registration ALWAYS assigns "Customer" role.
     const passwordHash = await hashPassword(password);
-    const newAdmin = DataStore.createAdmin({
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
+    const newAdmin = await createAdmin({
+      name,
+      email,
       passwordHash,
       role: "Customer",
       status: "active",
     });
 
-    const safeUser = DataStore.getAdminById(newAdmin.id);
+    const safeUser = await getAdminById(newAdmin.id);
     if (!safeUser) {
       return NextResponse.json(
         { success: false, message: "Account created but user record could not be loaded" },
@@ -69,21 +77,16 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
 
-    // Set HTTP-only cookie
-    response.cookies.set("admin_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
+    response.cookies.set("admin_token", token, AUTH_COOKIE);
 
     return response;
   } catch (error) {
-    console.error("Registration error:", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error during registration" },
-      { status: 500 }
-    );
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Auth database unavailable" },
+        { status: 503 }
+      );
+    }
+    return apiError(error, "Internal server error during registration");
   }
 }

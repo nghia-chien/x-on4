@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DataStore } from "@/lib/dataStore";
 import { generateToken } from "@/lib/auth";
+import {
+  createAdmin,
+  getAdminByEmail,
+  getAdminById,
+  updateAdmin,
+} from "@/lib/adminUserRepository";
+import type { AdminUser } from "@/types/admin";
+import { AUTH_COOKIE } from "@/lib/csrf";
 
 export async function GET(req: NextRequest) {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
@@ -70,9 +77,8 @@ export async function GET(req: NextRequest) {
     const name = profile.name || email.split("@")[0];
     const avatar = profile.picture?.data?.url;
 
-    // Check if user already exists
-    const existingUser = DataStore.getAdminByEmail(email);
-    let userToLogin;
+    const existingUser = await getAdminByEmail(email);
+    let userToLogin: AdminUser;
 
     if (existingUser) {
       // NEVER merge into Admin accounts
@@ -88,14 +94,21 @@ export async function GET(req: NextRequest) {
       );
 
       if (!alreadyLinked) {
-        accounts.push({ provider: "facebook", providerAccountId, emailVerified: true });
-        DataStore.updateAdmin(existingUser.id, { accounts, avatar: existingUser.avatar || avatar });
+        accounts.push({
+          provider: "facebook",
+          providerAccountId,
+          emailVerified: true,
+        });
+        await updateAdmin(existingUser.id, {
+          accounts,
+          avatar: existingUser.avatar || avatar,
+        });
       }
 
-      userToLogin = DataStore.getAdminById(existingUser.id)!;
+      userToLogin = (await getAdminById(existingUser.id))!;
     } else {
-      // Create new customer
-      const newUser = DataStore.createAdmin({
+      // Create new customer in MongoDB
+      userToLogin = await createAdmin({
         name,
         email,
         role: "Customer",
@@ -103,20 +116,13 @@ export async function GET(req: NextRequest) {
         avatar,
         accounts: [{ provider: "facebook", providerAccountId, emailVerified: true }],
       });
-      userToLogin = newUser;
     }
 
     // Generate standard session token
     const token = generateToken(userToLogin);
 
     const redirectResponse = NextResponse.redirect(`${siteUrl}/my-account`);
-    redirectResponse.cookies.set("admin_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60,
-    });
+    redirectResponse.cookies.set("admin_token", token, AUTH_COOKIE);
     redirectResponse.cookies.delete("oauth_state");
 
     return redirectResponse;

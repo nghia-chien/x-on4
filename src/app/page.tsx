@@ -4,10 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, BadgeCheck, Sparkles, MapPin, Phone, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import productsData from "@/data/products.json";
 import siteContent from "@/data/site-content.json";
 import { ProductCard, type Product } from "@/components/ProductCard";
-import { mapApiProduct, type ApiProductInput } from "@/lib/productMapper";
+import { mapApiProduct } from "@/lib/productMapper";
 
 const heroVideos = [
   {
@@ -52,9 +51,7 @@ export default function HomePage() {
   const heroVideoRef = React.useRef<HTMLVideoElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const [productsList, setProductsList] = useState<Product[]>(() =>
-    (productsData as unknown as ApiProductInput[]).map(mapApiProduct)
-  );
+  const [productsList, setProductsList] = useState<Product[]>([]);
 
   const handleHeroVideoEnded = () => {
     setHeroVideoIndex((prev) => (prev + 1) % heroVideos.length);

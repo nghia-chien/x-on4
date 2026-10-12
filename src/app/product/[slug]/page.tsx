@@ -6,7 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { ProductCard, type Product } from "@/components/ProductCard";
-import productsData from "@/data/products.json";
+import { mapApiProduct } from "@/lib/productMapper";
 import {
   Star,
   ShieldCheck,
@@ -41,56 +41,71 @@ export default function ProductDetailPage({
 }) {
   const resolvedParams = use(params);
   const rawSlug = resolvedParams.slug;
-  const decodedSlug = decodeURIComponent(rawSlug).toLowerCase().trim();
-
-  // Find static product fallback if available
-  const staticProduct = (productsData as Product[]).find((p) => {
-    const s = (p.slug || "").toLowerCase().trim();
-    const id = (p.id || "").toLowerCase().trim();
-    return s === decodedSlug || id === decodedSlug || s === rawSlug.toLowerCase() || id === rawSlug.toLowerCase();
-  });
 
   const { addItem, items } = useCart();
   const thumbnailScrollRef = useRef<HTMLDivElement>(null);
   const [selectedSize, setSelectedSize] = useState<string>("S");
   const [quantity, setQuantity] = useState<number>(1);
   const [added, setAdded] = useState(false);
-  const [productDetails, setProductDetails] = useState<Product | null>(staticProduct || null);
+  const [productDetails, setProductDetails] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [notFoundState, setNotFoundState] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch live product from API to get exact product & stock from DataStore
+  // Fetch live product + related items from MongoDB via API
   useEffect(() => {
     let isMounted = true;
     async function fetchLiveProduct() {
+      setIsLoading(true);
       try {
         const res = await fetch(`/api/products/${encodeURIComponent(rawSlug)}`);
         if (res.ok) {
           const json = await res.json();
           if (json.success && json.data && isMounted) {
             setProductDetails(json.data);
+            setNotFoundState(false);
+          } else if (isMounted) {
+            setNotFoundState(true);
           }
-        } else if (!staticProduct && isMounted) {
+        } else if (isMounted) {
           setNotFoundState(true);
+        }
+
+        const relatedRes = await fetch("/api/products?limit=8&status=active");
+        if (relatedRes.ok && isMounted) {
+          const relatedJson = await relatedRes.json();
+          if (relatedJson.success && Array.isArray(relatedJson.data?.products)) {
+            const mapped = relatedJson.data.products
+              .map(mapApiProduct)
+              .filter(
+                (p: Product) =>
+                  p.slug !== rawSlug &&
+                  p.id !== rawSlug &&
+                  p.slug !== decodeURIComponent(rawSlug).toLowerCase()
+              )
+              .slice(0, 4);
+            setRelatedProducts(mapped);
+          }
         }
       } catch (err) {
-        console.error("Error fetching live product stock:", err);
-        if (!staticProduct && isMounted) {
-          setNotFoundState(true);
-        }
+        console.error("Error fetching live product:", err);
+        if (isMounted) setNotFoundState(true);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     }
     fetchLiveProduct();
     return () => {
       isMounted = false;
     };
-  }, [rawSlug, staticProduct]);
+  }, [rawSlug]);
 
-  if (notFoundState && !staticProduct && !productDetails) {
+  if (!isLoading && notFoundState && !productDetails) {
     notFound();
   }
 
-  const raw = productDetails || staticProduct;
+  const raw = productDetails;
 
   const rawSizes: string[] = Array.isArray(raw?.sizes) && raw.sizes.length > 0
     ? raw.sizes
@@ -119,7 +134,7 @@ export default function ProductDetailPage({
     (raw as any)?.image ||
     (raw as any)?.thumbnail ||
     (Array.isArray((raw as any)?.images) && (raw as any)?.images[0] ? (raw as any)?.images[0] : undefined) ||
-    staticProduct?.image;
+    undefined;
 
   if (mainImg) galleryImages.push(mainImg);
 
@@ -135,7 +150,7 @@ export default function ProductDetailPage({
     });
   }
 
-  const fallbackProductImg = staticProduct?.image || "/images/IMG_7098.webp";
+  const fallbackProductImg = "/images/IMG_7098.webp";
   const finalGallery = galleryImages.length > 0 ? galleryImages : [fallbackProductImg];
   const activeImage = selectedImage || mainImg || fallbackProductImg;
 
@@ -165,7 +180,7 @@ export default function ProductDetailPage({
   const product = {
     id: raw?.id || "product-detail",
     slug: raw?.slug || rawSlug,
-    title: (raw as any)?.title || (raw as any)?.name || staticProduct?.title || "X-ON Handmade Press-On Nails",
+    title: (raw as any)?.title || (raw as any)?.name || "X-ON Handmade Press-On Nails",
     price: formattedSalePrice || formattedPrice,
     originalPrice: formattedSalePrice ? formattedPrice : undefined,
     image: activeImage,
@@ -199,9 +214,17 @@ export default function ProductDetailPage({
     setTimeout(() => setAdded(false), 2000);
   };
 
-  const relatedProducts = (productsData as Product[])
-    .filter((p) => p.slug !== product.slug && p.id !== product.id)
-    .slice(0, 4);
+  if (isLoading && !raw) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-neutral-500 text-sm">
+        Loading product...
+      </div>
+    );
+  }
+
+  if (!raw) {
+    notFound();
+  }
 
   return (
     <div

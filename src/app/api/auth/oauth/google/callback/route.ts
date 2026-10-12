@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DataStore } from "@/lib/dataStore";
 import { generateToken } from "@/lib/auth";
+import {
+  createAdmin,
+  getAdminByEmail,
+  getAdminById,
+  updateAdmin,
+} from "@/lib/adminUserRepository";
+import type { AdminUser } from "@/types/admin";
+import { AUTH_COOKIE } from "@/lib/csrf";
 
 export async function GET(req: NextRequest) {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
@@ -69,10 +76,9 @@ export async function GET(req: NextRequest) {
     const avatar = profile.picture;
     const emailVerified = profile.verified_email === true;
 
-    // Check if account already exists in DataStore
-    const existingUser = DataStore.getAdminByEmail(email);
+    const existingUser = await getAdminByEmail(email);
 
-    let userToLogin;
+    let userToLogin: AdminUser;
 
     if (existingUser) {
       // NEVER allow merging into an Admin role
@@ -95,13 +101,16 @@ export async function GET(req: NextRequest) {
 
       if (!alreadyLinked) {
         accounts.push({ provider: "google", providerAccountId, emailVerified });
-        DataStore.updateAdmin(existingUser.id, { accounts, avatar: existingUser.avatar || avatar });
+        await updateAdmin(existingUser.id, {
+          accounts,
+          avatar: existingUser.avatar || avatar,
+        });
       }
 
-      userToLogin = DataStore.getAdminById(existingUser.id)!;
+      userToLogin = (await getAdminById(existingUser.id))!;
     } else {
-      // Create new customer account
-      const newUser = DataStore.createAdmin({
+      // Create new customer account in MongoDB
+      userToLogin = await createAdmin({
         name,
         email,
         role: "Customer",
@@ -109,20 +118,13 @@ export async function GET(req: NextRequest) {
         avatar,
         accounts: [{ provider: "google", providerAccountId, emailVerified }],
       });
-      userToLogin = newUser;
     }
 
     // Generate standard session token
     const token = generateToken(userToLogin);
 
     const redirectResponse = NextResponse.redirect(`${siteUrl}/my-account`);
-    redirectResponse.cookies.set("admin_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60,
-    });
+    redirectResponse.cookies.set("admin_token", token, AUTH_COOKIE);
     redirectResponse.cookies.delete("oauth_state");
 
     return redirectResponse;

@@ -3,6 +3,7 @@
 import React from "react";
 import { optimizeImageUrl, formatVideoEmbedUrl } from "@/lib/mediaOptimizer";
 import OptimizedImage from "@/components/common/OptimizedImage";
+import { sanitizeRichText } from "@/lib/sanitize";
 
 export interface BlogBlock {
   id?: string;
@@ -81,7 +82,7 @@ export function formatRichText(raw?: string): string {
     )
     .replace(/<li\b([^>]*)>/gi, '<li class="leading-relaxed pl-1" $1>');
 
-  return text
+  text = text
     // Embedded images: ![caption](url) or ![caption|width](url)
     .replace(/!\[(.*?)(?:\|(.*?))?\]\((.*?)\)/g, (_match, caption, sizeParam, url) => {
       const cleanCaption = caption ? caption.trim() : "";
@@ -112,6 +113,9 @@ export function formatRichText(raw?: string): string {
       /\[(.*?)\]\((.*?)\)/g,
       '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-sky-600 dark:text-[#4cd7f6] hover:underline font-medium">$1</a>'
     );
+
+  // Defense-in-depth: strip XSS before dangerouslySetInnerHTML
+  return sanitizeRichText(text);
 }
 
 export interface ArticleBodyProps {

@@ -7,6 +7,7 @@ import {
   normalizeBlogStatus,
   normalizeLegacyBlogStatuses,
 } from "@/lib/blogRepository";
+import { sanitizePlainText, sanitizeRichText } from "@/lib/sanitize";
 
 function mongoErrorResponse(error: unknown) {
   if (error instanceof MongoUnavailableError) {
@@ -63,19 +64,24 @@ export async function POST(req: NextRequest) {
     const status = normalizeBlogStatus(body.status || "draft");
 
     const newBlog = await createBlog({
-      title,
+      title: sanitizePlainText(String(title), 200),
       slug: autoSlug,
-      excerpt: body.excerpt || "",
-      content,
-      thumbnail: body.thumbnail || "",
-      author: body.author || "X-ON Team",
-      category: body.category || "Nail Trends",
-      tags: body.tags || [],
+      excerpt: sanitizePlainText(String(body.excerpt || ""), 500),
+      content: sanitizeRichText(String(content)),
+      thumbnail: sanitizePlainText(String(body.thumbnail || ""), 500),
+      author: sanitizePlainText(String(body.author || "X-ON Team"), 100),
+      category: sanitizePlainText(String(body.category || "Nail Trends"), 100),
+      tags: Array.isArray(body.tags)
+        ? body.tags.map((t: unknown) => sanitizePlainText(String(t), 50))
+        : [],
       status,
       publishedAt:
         status === "published" ? new Date().toISOString() : undefined,
-      seoTitle: body.seoTitle || title,
-      seoDescription: body.seoDescription || body.excerpt || "",
+      seoTitle: sanitizePlainText(String(body.seoTitle || title), 200),
+      seoDescription: sanitizePlainText(
+        String(body.seoDescription || body.excerpt || ""),
+        300
+      ),
     });
 
     return NextResponse.json({ success: true, data: newBlog }, { status: 201 });

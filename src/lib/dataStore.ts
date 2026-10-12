@@ -16,7 +16,6 @@ import {
   ContactMessageItem,
   ContactMessageStatus,
 } from "@/types/admin";
-import productsJson from "@/data/products.json";
 import siteContentJson from "@/data/site-content.json";
 import galleryJson from "@/data/gallery-product.json";
 
@@ -166,34 +165,8 @@ function initMemoryStore(): MemoryStore {
     },
   ];
 
-  const initialProducts: ProductItem[] = (
-    (productsJson as Array<{ id?: string; title?: string; slug?: string; image?: string; category?: string }>) || []
-  ).map((p, idx) => ({
-    id: p.id || `prod-${idx + 1}`,
-    name: p.title || `X-ON Press-On Nails #${7098 + idx}`,
-    slug: p.slug || `xo-${7098 + idx}`,
-    sku: `XON-${7098 + idx}`,
-    description:
-      "Handmade luxury press-on nails crafted with ultra-durable Grip-X technology and Cold Gel Tech. Reusable up to 5x with proper care.",
-    shortDescription: "Artisan handcrafted cold-gel press-on nails",
-    price: 24.99,
-    salePrice: idx % 2 === 0 ? 19.99 : null,
-    stock: 25 - (idx % 5) * 4,
-    images: [p.image || `/images/IMG_${7098 + (idx % 10)}.JPG`],
-    thumbnail: p.image || `/images/IMG_${7098 + (idx % 10)}.JPG`,
-    category: p.category || "Handmade Grip-X Nails",
-    collection: "Spring Luxe 2026",
-    productType: "Handmade Press-On Nails",
-    shapes: ["Almond", "Coffin", "Oval", "Round", "Square", "Stiletto"],
-    sizes: ["XS", "S", "M", "L", "Custom"],
-    tags: ["handmade", "grip-x", "reusable", "trending"],
-    featured: idx < 6,
-    bestSeller: idx >= 6 && idx < 12,
-    comingSoon: false,
-    status: "active",
-    createdAt: new Date(Date.now() - idx * 86400000).toISOString(),
-    updatedAt: new Date().toISOString(),
-  }));
+  // Products live in MongoDB (+ Cloudinary URLs). Memory store keeps an empty catalog.
+  const initialProducts: ProductItem[] = [];
 
   const initialCustomers: CustomerItem[] = [
     {

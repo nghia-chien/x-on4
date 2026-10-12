@@ -7,6 +7,7 @@ import {
   normalizeBlogStatus,
   updateBlog,
 } from "@/lib/blogRepository";
+import { sanitizePlainText, sanitizeRichText } from "@/lib/sanitize";
 
 function mongoErrorResponse(error: unknown) {
   if (error instanceof MongoUnavailableError) {
@@ -56,6 +57,19 @@ export async function PUT(
     }
     if (body.status === "published" && !body.publishedAt) {
       body.publishedAt = new Date().toISOString();
+    }
+    if (body.title !== undefined) body.title = sanitizePlainText(String(body.title), 200);
+    if (body.excerpt !== undefined) {
+      body.excerpt = sanitizePlainText(String(body.excerpt), 500);
+    }
+    if (body.content !== undefined) {
+      body.content = sanitizeRichText(String(body.content));
+    }
+    if (body.author !== undefined) {
+      body.author = sanitizePlainText(String(body.author), 100);
+    }
+    if (body.category !== undefined) {
+      body.category = sanitizePlainText(String(body.category), 100);
     }
 
     const updated = await updateBlog(params.id, body);

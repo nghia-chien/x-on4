@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import {
   Eye,
@@ -10,32 +11,47 @@ import {
   Lock,
   Mail,
   User as UserIcon,
-  Shield,
   ArrowRight,
-  ArrowLeft,
   ArrowUpRight,
 } from "lucide-react";
 
+function getCurrentDateLabel() {
+  const now = new Date();
+  return {
+    month: now.toLocaleString("en-US", { month: "short" }),
+    year: now.getFullYear().toString(),
+    fullDate: now.toLocaleString("en-US", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }),
+  };
+}
+
 export default function AuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-screen flex items-center justify-center bg-[#e6d3cf] text-xs text-neutral-600">
+          Loading...
+        </div>
+      }
+    >
+      <AuthPageContent />
+    </Suspense>
+  );
+}
+
+function AuthPageContent() {
   const { login, register } = useAdminAuth();
+  const searchParams = useSearchParams();
 
   // Mode: "login" or "register"
   const [mode, setMode] = useState<"login" | "register">("login");
 
-  // Real-time Date State
-  const [currentDate, setCurrentDate] = useState<{ month: string; year: string; fullDate: string }>({
-    month: "Oct",
-    year: "2026",
-    fullDate: "",
-  });
-
-  useEffect(() => {
-    const now = new Date();
-    const monthStr = now.toLocaleString("en-US", { month: "short" });
-    const yearStr = now.getFullYear().toString();
-    const fullStr = now.toLocaleString("en-US", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
-    setCurrentDate({ month: monthStr, year: yearStr, fullDate: fullStr });
-  }, []);
+  // Real-time Date State (computed once — no effect setState)
+  const [currentDate] = useState(getCurrentDateLabel);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -55,34 +71,35 @@ export default function AuthPage() {
 
   // API submitting status
   const [isLoading, setIsLoading] = useState(false);
-  const [oauthError, setOauthError] = useState<string | null>(null);
-
-  // Parse error query param if redirected back from OAuth callback
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const err = params.get("error");
-      if (err) {
-        setOauthError(decodeURIComponent(err));
-      }
-    }
-  }, []);
+  // undefined = use URL error; string/null = local override (e.g. after retry)
+  const [oauthErrorOverride, setOauthErrorOverride] = useState<string | null | undefined>(
+    undefined
+  );
+  const urlOauthError = searchParams.get("error");
+  const oauthError =
+    oauthErrorOverride !== undefined
+      ? oauthErrorOverride
+      : urlOauthError
+        ? decodeURIComponent(urlOauthError)
+        : null;
 
   const handleSocialLogin = async (provider: "google" | "facebook") => {
     setIsLoading(true);
-    setOauthError(null);
+    setOauthErrorOverride(null);
     try {
       const res = await fetch(`/api/auth/oauth?provider=${provider}`);
       const data = await res.json();
       if (data.success && data.url) {
         window.location.href = data.url;
       } else {
-        setOauthError(data.message || `Failed to initiate ${provider} authentication.`);
+        setOauthErrorOverride(
+          data.message || `Failed to initiate ${provider} authentication.`
+        );
         setIsLoading(false);
       }
     } catch (err) {
       console.error("Social login trigger error:", err);
-      setOauthError(`Network error while connecting to ${provider}.`);
+      setOauthErrorOverride(`Network error while connecting to ${provider}.`);
       setIsLoading(false);
     }
   };
@@ -278,10 +295,15 @@ export default function AuthPage() {
                       />
                       <button
                         type="button"
-                        onClick={() => triggerShake(false, ["loginPassword"])}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 py-0.5 bg-white/90 hover:bg-white text-[10px] font-semibold text-neutral-600 rounded-full border border-neutral-200 transition-all cursor-pointer"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-neutral-500 hover:text-neutral-800 rounded-full transition-colors cursor-pointer"
                       >
-                        I forgot
+                        {showPassword ? (
+                          <EyeOff className="w-3.5 h-3.5" />
+                        ) : (
+                          <Eye className="w-3.5 h-3.5" />
+                        )}
                       </button>
                     </div>
 

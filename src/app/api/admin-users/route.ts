@@ -1,13 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword, requireAuth } from "@/lib/auth";
-import { DataStore } from "@/lib/dataStore";
+import {
+  createAdmin,
+  getAdminByEmail,
+  listAdmins,
+  MongoUnavailableError,
+  normalizeRole,
+} from "@/lib/adminUserRepository";
 
 export async function GET(req: NextRequest) {
   const { errorResponse } = await requireAuth(req, ["Admin"]);
   if (errorResponse) return errorResponse;
 
-  const admins = DataStore.getAdmins();
-  return NextResponse.json({ success: true, data: admins });
+  try {
+    const admins = await listAdmins();
+    return NextResponse.json({ success: true, data: admins });
+  } catch (error) {
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Auth database unavailable" },
+        { status: 503 }
+      );
+    }
+    console.error("List admins error:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to list admin users" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -25,7 +45,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existing = DataStore.getAdminByEmail(email);
+    if (String(password).length < 12) {
+      return NextResponse.json(
+        { success: false, message: "Password must be at least 12 characters" },
+        { status: 400 }
+      );
+    }
+
+    const existing = await getAdminByEmail(email);
     if (existing) {
       return NextResponse.json(
         { success: false, message: "An admin with this email already exists" },
@@ -34,16 +61,22 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hashPassword(password);
-    const newAdmin = DataStore.createAdmin({
+    const newAdmin = await createAdmin({
       name,
       email,
       passwordHash,
-      role: role || "Customer",
-      status: status || "active",
+      role: normalizeRole(role || "Customer"),
+      status: status === "inactive" ? "inactive" : "active",
     });
 
     return NextResponse.json({ success: true, data: newAdmin }, { status: 201 });
   } catch (error) {
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Auth database unavailable" },
+        { status: 503 }
+      );
+    }
     console.error("Create admin error:", error);
     return NextResponse.json(
       { success: false, message: "Failed to create admin user" },

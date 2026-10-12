@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { DataStore } from "@/lib/dataStore";
+import {
+  deductStock,
+  findProductForCartItem,
+  MongoUnavailableError,
+} from "@/lib/productRepository";
 
 export async function GET(req: NextRequest) {
   const { errorResponse } = await requireAuth(req);
@@ -28,18 +33,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate stock for all ordered items
-    const storeProducts = DataStore.getProducts({ limit: 500 }).products;
+    // Validate stock against MongoDB catalog
     for (const item of items) {
-      const prod = storeProducts.find(
-        (p) =>
-          p.id === item.productId ||
-          p.slug === item.productId ||
-          item.productId?.startsWith(`${p.id}-`) ||
-          item.productId?.startsWith(`${p.slug}-`) ||
-          p.name.toLowerCase() === (item.productName || item.name || item.title || "").toLowerCase()
-      );
-
+      const prod = await findProductForCartItem(item);
       if (prod) {
         if (prod.stock <= 0) {
           return NextResponse.json(
@@ -66,7 +62,7 @@ export async function POST(req: NextRequest) {
     const normalizedItems = items.map((i: any) => ({
       productId: i.productId || i.id || "",
       productName: i.productName || i.name || i.title || "Press-On Nail Set",
-      productImage: i.productImage || i.image || "/images/IMG_7098.webp",
+      productImage: i.productImage || i.image || "",
       size: i.size || "Standard",
       quantity: Number(i.quantity) || 1,
       price: Number(i.price || i.priceNumber) || 19.99,
@@ -98,8 +94,20 @@ export async function POST(req: NextRequest) {
       notes: body.notes || "",
     });
 
+    for (const item of normalizedItems) {
+      if (item.productId) {
+        await deductStock(item.productId, item.quantity);
+      }
+    }
+
     return NextResponse.json({ success: true, data: newOrder }, { status: 201 });
   } catch (error) {
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Product database unavailable" },
+        { status: 503 }
+      );
+    }
     console.error("Create order error:", error);
     return NextResponse.json(
       { success: false, message: "Failed to create order" },

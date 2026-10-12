@@ -13,7 +13,7 @@ export async function POST() {
     sameSite: "lax",
     path: "/",
     maxAge: 0,
-  });
+  }); // AUTH_COOKIE flags + maxAge 0 to clear
 
   return response;
 }

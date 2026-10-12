@@ -5,8 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ProductCard, type Product } from "@/components/ProductCard";
-import productsData from "@/data/products.json";
-import { mapApiProduct, type ApiProductInput } from "@/lib/productMapper";
+import { mapApiProduct } from "@/lib/productMapper";
 import {
   Search,
   X,
@@ -118,10 +117,8 @@ export function ShopTemplate({
   const pageParam = parseInt(searchParams.get("page") ?? "1", 10);
   const sortParam = searchParams.get("sort") ?? "default";
 
-  // Data state
-  const [productsList, setProductsList] = useState<Product[]>(() =>
-    (productsData as unknown as ApiProductInput[]).map(mapApiProduct)
-  );
+  // Data state — loaded from MongoDB via /api/products
+  const [productsList, setProductsList] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -191,13 +188,11 @@ export function ShopTemplate({
         const published = json.data.products.filter(
           (p: { status?: string }) => !p.status || p.status === "active"
         );
-        if (published.length > 0) {
-          setProductsList(published.map(mapApiProduct));
-        }
+        setProductsList(published.map(mapApiProduct));
       }
     } catch (err) {
       console.error(err);
-      setLoadError("We couldn't load the latest inventory. Showing offline catalog.");
+      setLoadError("We couldn't load products from the catalog.");
     } finally {
       setIsLoading(false);
     }

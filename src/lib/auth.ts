@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { AdminRole, AdminUser } from "@/types/admin";
-import { DataStore } from "./dataStore";
+import { getAdminById } from "./adminUserRepository";
 
 if (!process.env.JWT_SECRET) {
   throw new Error(
@@ -77,23 +77,28 @@ export async function requireAuth(
   if (token) {
     const payload = verifyToken(token);
     if (payload) {
-      const user = DataStore.getAdminById(payload.userId);
-      if (user && user.status === "active") {
-        // DEFAULT-DENY: If allowedRoles is not specified, default strictly to STAFF_ROLES
-        const effectiveAllowedRoles = allowedRoles && allowedRoles.length > 0 ? allowedRoles : STAFF_ROLES;
+      try {
+        const user = await getAdminById(payload.userId);
+        if (user && user.status === "active") {
+          // DEFAULT-DENY: If allowedRoles is not specified, default strictly to STAFF_ROLES
+          const effectiveAllowedRoles =
+            allowedRoles && allowedRoles.length > 0 ? allowedRoles : STAFF_ROLES;
 
-        const hasPermission = effectiveAllowedRoles.includes(user.role);
+          const hasPermission = effectiveAllowedRoles.includes(user.role);
 
-        if (!hasPermission) {
-          return {
-            user: null,
-            errorResponse: NextResponse.json(
-              { success: false, message: "Forbidden: Insufficient permissions" },
-              { status: 403 }
-            ),
-          };
+          if (!hasPermission) {
+            return {
+              user: null,
+              errorResponse: NextResponse.json(
+                { success: false, message: "Forbidden: Insufficient permissions" },
+                { status: 403 }
+              ),
+            };
+          }
+          return { user, errorResponse: null };
         }
-        return { user, errorResponse: null };
+      } catch (error) {
+        console.error("requireAuth Mongo lookup failed:", error);
       }
     }
   }

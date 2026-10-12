@@ -13,14 +13,23 @@ const AdminUserSchema = new Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
+    // Optional for OAuth-only accounts; password login requires a bcrypt hash
+    passwordHash: { type: String, default: "" },
     role: {
       type: String,
       enum: ["Admin", "Customer", "Wholesale"],
-      default: "Admin",
+      default: "Customer",
     },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
     lastLogin: { type: Date },
+    avatar: { type: String, default: "" },
+    accounts: [
+      {
+        provider: { type: String, enum: ["google", "facebook"], required: true },
+        providerAccountId: { type: String, required: true },
+        emailVerified: { type: Boolean, default: false },
+      },
+    ],
   },
   { timestamps: true }
 );
