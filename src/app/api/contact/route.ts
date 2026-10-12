@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DataStore } from "@/lib/dataStore";
 import { requireAuth } from "@/lib/auth";
 import {
   CONTACT_MESSAGE_STATUSES,
@@ -8,6 +7,16 @@ import {
 import { apiError, tooManyRequests } from "@/lib/apiError";
 import { clientIp, FORM_LIMIT, rateLimit } from "@/lib/rateLimit";
 import { isValidEmail, sanitizePlainText } from "@/lib/sanitize";
+import {
+  createContactMessage,
+  deleteContactMessage,
+  listContactMessages,
+  MongoUnavailableError,
+  updateContactMessageStatus,
+} from "@/lib/contactRepository";
+
+export const runtime = "nodejs";
+export const maxDuration = 30;
 
 export async function GET(req: NextRequest) {
   const { errorResponse } = await requireAuth(req);
@@ -16,9 +25,15 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const status = searchParams.get("status") || undefined;
     const search = searchParams.get("search") || undefined;
-    const messages = DataStore.getContactMessages({ status, search });
+    const messages = await listContactMessages({ status, search });
     return NextResponse.json({ success: true, data: messages });
   } catch (error) {
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Inquiries database unavailable" },
+        { status: 503 }
+      );
+    }
     return apiError(error, "Failed to fetch contact inquiries");
   }
 }
@@ -56,7 +71,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newMessage = DataStore.createContactMessage({
+    const newMessage = await createContactMessage({
       name,
       email,
       phone,
@@ -66,6 +81,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: newMessage }, { status: 201 });
   } catch (error) {
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Inquiries database unavailable" },
+        { status: 503 }
+      );
+    }
     return apiError(error, "Failed to submit contact message. Please try again.");
   }
 }
@@ -95,7 +116,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const updated = DataStore.updateContactMessageStatus(
+    const updated = await updateContactMessageStatus(
       id,
       status as ContactMessageStatus
     );
@@ -108,6 +129,12 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Inquiries database unavailable" },
+        { status: 503 }
+      );
+    }
     return apiError(error, "Failed to update status");
   }
 }
@@ -123,9 +150,15 @@ export async function DELETE(req: NextRequest) {
         { status: 400 }
       );
     }
-    const deleted = DataStore.deleteContactMessage(id);
+    const deleted = await deleteContactMessage(id);
     return NextResponse.json({ success: deleted });
   } catch (error) {
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Inquiries database unavailable" },
+        { status: 503 }
+      );
+    }
     return apiError(error, "Failed to delete message");
   }
 }

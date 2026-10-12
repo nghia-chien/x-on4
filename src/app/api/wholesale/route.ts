@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { DataStore } from "@/lib/dataStore";
 import { apiError, tooManyRequests } from "@/lib/apiError";
 import { clientIp, FORM_LIMIT, rateLimit } from "@/lib/rateLimit";
 import { isValidEmail, sanitizePlainText } from "@/lib/sanitize";
+import {
+  createWholesale,
+  listWholesale,
+  MongoUnavailableError,
+} from "@/lib/wholesaleRepository";
+
+export const runtime = "nodejs";
+export const maxDuration = 30;
 
 export async function GET(req: NextRequest) {
   const { errorResponse } = await requireAuth(req);
@@ -11,9 +18,15 @@ export async function GET(req: NextRequest) {
 
   try {
     const status = req.nextUrl.searchParams.get("status") || undefined;
-    const list = DataStore.getWholesale({ status });
+    const list = await listWholesale({ status });
     return NextResponse.json({ success: true, data: list });
   } catch (error) {
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Wholesale database unavailable" },
+        { status: 503 }
+      );
+    }
     return apiError(error, "Failed to fetch wholesale requests");
   }
 }
@@ -51,7 +64,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newRequest = DataStore.createWholesale({
+    const newRequest = await createWholesale({
       businessName,
       contactName,
       email,
@@ -68,6 +81,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: newRequest }, { status: 201 });
   } catch (error) {
+    if (error instanceof MongoUnavailableError) {
+      return NextResponse.json(
+        { success: false, message: "Wholesale database unavailable" },
+        { status: 503 }
+      );
+    }
     return apiError(error, "Failed to submit wholesale request");
   }
 }

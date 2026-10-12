@@ -196,6 +196,8 @@ const WholesaleRequestSchema = new Schema(
     contactName: { type: String, required: true },
     email: { type: String, required: true },
     phone: { type: String, required: true },
+    website: { type: String, default: "" },
+    taxId: { type: String, default: "" },
     businessType: { type: String, default: "" },
     location: { type: String, default: "" },
     quantity: { type: String, default: "" },

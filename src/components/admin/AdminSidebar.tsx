@@ -52,7 +52,14 @@ export function AdminSidebar({
   React.useEffect(() => {
     async function fetchCounts() {
       try {
-        const res = await fetch("/api/admin/sidebar-counts");
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("admin_token")
+            : null;
+        const res = await fetch("/api/admin/sidebar-counts", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: "include",
+        });
         if (res.ok) {
           const json = await res.json();
           if (json.success && json.data) {

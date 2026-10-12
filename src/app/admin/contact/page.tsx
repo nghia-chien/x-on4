@@ -17,6 +17,11 @@ export default function AdminContactPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const authHeaders = useCallback((): Record<string, string> => {
+    const token = localStorage.getItem("admin_token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, []);
+
   const fetchMessages = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -24,19 +29,24 @@ export default function AdminContactPage() {
       if (statusFilter !== "all") url.searchParams.set("status", statusFilter);
       if (searchQuery.trim()) url.searchParams.set("search", searchQuery.trim());
 
-      const res = await fetch(url.toString());
+      const res = await fetch(url.toString(), {
+        headers: authHeaders(),
+        credentials: "include",
+      });
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
           setMessages(json.data);
         }
+      } else {
+        error("Failed to load contact messages");
       }
     } catch {
       error("Failed to load contact messages");
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, searchQuery, error]);
+  }, [statusFilter, searchQuery, error, authHeaders]);
 
   useEffect(() => {
     fetchMessages();
@@ -45,9 +55,13 @@ export default function AdminContactPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this message?")) return;
     try {
-      const res = await fetch(`/api/contact?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/contact?id=${id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+        credentials: "include",
+      });
       if (res.ok) {
-        setMessages(messages.filter((m) => m.id !== id));
+        setMessages((prev) => prev.filter((m) => m.id !== id));
         success("Message deleted successfully");
       } else {
         error("Failed to delete message");
@@ -187,7 +201,11 @@ export default function AdminContactPage() {
                             try {
                               const res = await fetch(`/api/contact`, {
                                 method: "PUT",
-                                headers: { "Content-Type": "application/json" },
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  ...authHeaders(),
+                                },
+                                credentials: "include",
                                 body: JSON.stringify({ id: msg.id, status: newStatus }),
                               });
                               if (res.ok) {
@@ -195,6 +213,8 @@ export default function AdminContactPage() {
                                   prev.map((m) => (m.id === msg.id ? { ...m, status: newStatus } : m))
                                 );
                                 success(`Message status updated to ${newStatus}`);
+                              } else {
+                                error("Failed to update status");
                               }
                             } catch {
                               error("Failed to update status");
