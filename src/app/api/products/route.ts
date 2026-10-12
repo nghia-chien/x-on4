@@ -6,10 +6,18 @@ import {
   MongoUnavailableError,
 } from "@/lib/productRepository";
 
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
 function mongoErrorResponse(error: unknown) {
   if (error instanceof MongoUnavailableError) {
     return NextResponse.json(
-      { success: false, message: "Product database unavailable" },
+      {
+        success: false,
+        message: "Product database unavailable",
+        code: error.code,
+        hint: error.hint,
+      },
       { status: 503 }
     );
   }

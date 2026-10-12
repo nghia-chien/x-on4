@@ -1,12 +1,18 @@
 import mongoose from "mongoose";
-import { connectToDatabase } from "@/lib/db";
+import { connectToDatabase, getMongoDiagnostics } from "@/lib/db";
 import { ProductModel } from "@/lib/models";
 import type { NailShape, ProductItem } from "@/types/admin";
 
 export class MongoUnavailableError extends Error {
+  code: string | null;
+  hint: string | null;
+
   constructor(message = "MongoDB is not configured or unreachable") {
-    super(message);
+    const diag = getMongoDiagnostics();
+    super(diag.hint || message);
     this.name = "MongoUnavailableError";
+    this.code = diag.code;
+    this.hint = diag.hint;
   }
 }
 

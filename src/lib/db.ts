@@ -23,8 +23,75 @@ if (!global.mongooseCache) {
   global.mongooseCache = cached;
 }
 
+/** Last connect failure (safe for logs / health — never includes URI). */
+let lastConnectError: string | null = null;
+let lastConnectCode:
+  | "missing_uri"
+  | "ip_whitelist"
+  | "timeout"
+  | "connect_failed"
+  | null = null;
+
+export type MongoConnectCode =
+  | "missing_uri"
+  | "ip_whitelist"
+  | "timeout"
+  | "connect_failed";
+
+export function getMongoDiagnostics(): {
+  configured: boolean;
+  connected: boolean;
+  code: MongoConnectCode | null;
+  error: string | null;
+  hint: string | null;
+} {
+  return {
+    configured: Boolean(pickMongoUri()),
+    connected: Boolean(cached.conn),
+    code: lastConnectCode,
+    error: lastConnectError,
+    hint: hintForCode(lastConnectCode),
+  };
+}
+
+function hintForCode(code: MongoConnectCode | null): string | null {
+  switch (code) {
+    case "missing_uri":
+      return "Set MONGODB_URI in Vercel → Settings → Environment Variables (Production), then Redeploy.";
+    case "ip_whitelist":
+    case "timeout":
+      return "MongoDB Atlas → Network Access → Add IP Address → Allow Access from Anywhere (0.0.0.0/0). Wait ~1 min, then retry.";
+    case "connect_failed":
+      return "Check MONGODB_URI credentials and Atlas Network Access (0.0.0.0/0).";
+    default:
+      return null;
+  }
+}
+
+function classifyError(msg: string): MongoConnectCode {
+  if (/whitelist|IP that isn't|not authorized|authentication failed/i.test(msg)) {
+    return /authentication failed/i.test(msg) ? "connect_failed" : "ip_whitelist";
+  }
+  if (/timed out|Server selection|ETIMEOUT|ENETUNREACH|ECONNREFUSED/i.test(msg)) {
+    return "timeout";
+  }
+  return "connect_failed";
+}
+
 function isVercelRuntime(): boolean {
   return process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
+}
+
+function cleanUri(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  let v = raw.trim();
+  if (
+    (v.startsWith('"') && v.endsWith('"')) ||
+    (v.startsWith("'") && v.endsWith("'"))
+  ) {
+    v = v.slice(1, -1).trim();
+  }
+  return v || undefined;
 }
 
 function isSrvFailure(error: unknown): boolean {
@@ -97,10 +164,10 @@ async function buildStandardUriFromSrv(srvUri: string): Promise<string> {
 async function connectWithUri(uri: string): Promise<typeof mongoose> {
   return mongoose.connect(uri, {
     bufferCommands: false,
-    // Serverless-friendly: few sockets per isolate
     maxPoolSize: isVercelRuntime() ? 5 : 10,
     minPoolSize: 0,
-    serverSelectionTimeoutMS: isVercelRuntime() ? 8_000 : 12_000,
+    // Keep under typical Vercel hobby limit but long enough for cold start
+    serverSelectionTimeoutMS: isVercelRuntime() ? 10_000 : 12_000,
     socketTimeoutMS: 45_000,
     maxIdleTimeMS: 60_000,
     family: 4,
@@ -108,8 +175,8 @@ async function connectWithUri(uri: string): Promise<typeof mongoose> {
 }
 
 function pickMongoUri(): string | undefined {
-  const srv = process.env.MONGODB_URI?.trim();
-  const standard = process.env.MONGODB_URI_STANDARD?.trim();
+  const srv = cleanUri(process.env.MONGODB_URI);
+  const standard = cleanUri(process.env.MONGODB_URI_STANDARD);
 
   // Vercel / Linux: prefer native mongodb+srv (driver DNS works)
   if (isVercelRuntime()) {
@@ -128,6 +195,8 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
   const MONGODB_URI = pickMongoUri();
 
   if (!MONGODB_URI) {
+    lastConnectCode = "missing_uri";
+    lastConnectError = "MONGODB_URI is not set";
     console.error(
       "[MongoDB] Missing MONGODB_URI (set it in Vercel → Project → Settings → Environment Variables)"
     );
@@ -135,6 +204,8 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
   }
 
   if (cached.conn) {
+    lastConnectCode = null;
+    lastConnectError = null;
     return cached.conn;
   }
 
@@ -143,12 +214,11 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
       const isSrv = MONGODB_URI.startsWith("mongodb+srv://");
       const onVercel = isVercelRuntime();
 
-      // Standard seed-list URI — connect directly
       if (!isSrv) {
         return connectWithUri(MONGODB_URI);
       }
 
-      // Vercel / non-Windows: native SRV first (correct path for Atlas + serverless)
+      // Vercel / non-Windows: native SRV first
       if (onVercel || process.platform !== "win32") {
         try {
           return await connectWithUri(MONGODB_URI);
@@ -190,17 +260,16 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
 
   try {
     cached.conn = await cached.promise;
+    lastConnectCode = null;
+    lastConnectError = null;
     return cached.conn;
   } catch (e) {
     cached.promise = null;
     const msg = e instanceof Error ? e.message : String(e);
+    lastConnectError = msg.slice(0, 300);
+    lastConnectCode = classifyError(msg);
     console.error("[MongoDB] Failed to connect:", msg);
-    // Common Vercel cause: Atlas Network Access does not allow 0.0.0.0/0
-    if (msg.includes("whitelist") || msg.includes("IP that isn't")) {
-      console.error(
-        "[MongoDB] Fix: Atlas → Network Access → Allow Access from Anywhere (0.0.0.0/0)"
-      );
-    }
+    console.error("[MongoDB] Hint:", hintForCode(lastConnectCode));
     return null;
   }
 }
