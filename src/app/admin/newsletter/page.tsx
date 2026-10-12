@@ -252,7 +252,7 @@ export default function AdminNewsletterPage() {
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
                         className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase inline-block ${
-                          sub.status === "Subscribed"
+                          sub.status === "subscribed"
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             : "bg-neutral-100 text-neutral-600 border border-neutral-200"
                         }`}

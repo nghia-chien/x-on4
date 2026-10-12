@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       location: body.location ? body.location.trim() : "",
       quantity: body.quantity ? body.quantity.trim() : "",
       message: body.message ? body.message.trim() : "",
-      status: "New",
+      status: "new",
       adminNotes: "",
     });
 

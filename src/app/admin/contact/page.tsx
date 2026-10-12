@@ -112,9 +112,10 @@ export default function AdminContactPage() {
                 className="px-2.5 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800"
               >
                 <option value="all">All Status</option>
-                <option value="New">New</option>
-                <option value="Replied">Replied</option>
-                <option value="Resolved">Resolved</option>
+                <option value="new">New</option>
+                <option value="read">Read</option>
+                <option value="replied">Replied</option>
+                <option value="archived">Archived</option>
               </select>
             </div>
           </div>
@@ -182,7 +183,7 @@ export default function AdminContactPage() {
                         <select
                           value={msg.status}
                           onChange={async (e) => {
-                            const newStatus = e.target.value as "New" | "Replied" | "Resolved";
+                            const newStatus = e.target.value as ContactMessageItem["status"];
                             try {
                               const res = await fetch(`/api/contact`, {
                                 method: "PUT",
@@ -200,16 +201,19 @@ export default function AdminContactPage() {
                             }
                           }}
                           className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border cursor-pointer ${
-                            msg.status === "New"
+                            msg.status === "new"
                               ? "bg-rose-50 text-rose-700 border-rose-200"
-                              : msg.status === "Replied"
+                              : msg.status === "replied"
                               ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : msg.status === "read"
+                              ? "bg-sky-50 text-sky-700 border-sky-200"
+                              : "bg-neutral-50 text-neutral-700 border-neutral-200"
                           }`}
                         >
-                          <option value="New">New</option>
-                          <option value="Replied">Replied</option>
-                          <option value="Resolved">Resolved</option>
+                          <option value="new">New</option>
+                          <option value="read">Read</option>
+                          <option value="replied">Replied</option>
+                          <option value="archived">Archived</option>
                         </select>
                       </td>
 

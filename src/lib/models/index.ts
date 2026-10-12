@@ -1,4 +1,12 @@
 import { Schema, model, models } from "mongoose";
+import {
+  NAIL_SHAPES,
+  CONTACT_MESSAGE_STATUSES,
+  WHOLESALE_REQUEST_STATUSES,
+  BLOG_POST_STATUSES,
+  NEWSLETTER_STATUSES,
+  COMING_SOON_STATUSES,
+} from "@/types/admin";
 
 // 1. Admin User Schema
 const AdminUserSchema = new Schema(
@@ -32,8 +40,8 @@ const ProductSchema = new Schema(
     thumbnail: { type: String, default: "" },
     category: { type: String, default: "Handmade Nails" },
     collectionName: { type: String, default: "" },
-    productType: { type: String, default: "Handmade X-ON Nails" },
-    shapes: [{ type: String }],
+    productType: { type: String, default: "Handmade Press-On Nails" },
+    shapes: [{ type: String, enum: [...NAIL_SHAPES] }],
     sizes: [{ type: String }],
     sizeStock: { type: Map, of: Number, default: {} },
     designThemes: [{ type: String }],
@@ -164,8 +172,8 @@ const ComingSoonSchema = new Schema(
     expectedReleaseDate: { type: String, default: "" },
     status: {
       type: String,
-      enum: ["Coming Soon", "Published", "Released", "Hidden"],
-      default: "Coming Soon",
+      enum: [...COMING_SOON_STATUSES],
+      default: "coming_soon",
     },
     displayOrder: { type: Number, default: 0 },
   },
@@ -185,8 +193,8 @@ const WholesaleRequestSchema = new Schema(
     message: { type: String, default: "" },
     status: {
       type: String,
-      enum: ["New", "Contacted", "Approved", "Rejected", "Converted"],
-      default: "New",
+      enum: [...WHOLESALE_REQUEST_STATUSES],
+      default: "new",
     },
     adminNotes: { type: String, default: "" },
   },
@@ -204,7 +212,11 @@ const BlogPostSchema = new Schema(
     author: { type: String, default: "X-ON Team" },
     category: { type: String, default: "Nail Care & Trends" },
     tags: [{ type: String }],
-    status: { type: String, enum: ["Draft", "Published", "Archived"], default: "Draft" },
+    status: {
+      type: String,
+      enum: [...BLOG_POST_STATUSES],
+      default: "draft",
+    },
     publishedAt: { type: Date },
     seoTitle: { type: String, default: "" },
     seoDescription: { type: String, default: "" },
@@ -216,7 +228,11 @@ const BlogPostSchema = new Schema(
 const NewsletterSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true },
-    status: { type: String, enum: ["Subscribed", "Unsubscribed"], default: "Subscribed" },
+    status: {
+      type: String,
+      enum: [...NEWSLETTER_STATUSES],
+      default: "subscribed",
+    },
     subscribedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
@@ -270,7 +286,11 @@ const ContactMessageSchema = new Schema(
     phone: { type: String, default: "" },
     subject: { type: String, default: "" },
     message: { type: String, required: true },
-    status: { type: String, enum: ["New", "Read", "Replied", "Archived"], default: "New" },
+    status: {
+      type: String,
+      enum: [...CONTACT_MESSAGE_STATUSES],
+      default: "new",
+    },
   },
   { timestamps: true }
 );

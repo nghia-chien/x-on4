@@ -14,6 +14,7 @@ import {
   SiteSettings,
   WholesaleRequestItem,
   ContactMessageItem,
+  ContactMessageStatus,
 } from "@/types/admin";
 import productsJson from "@/data/products.json";
 import siteContentJson from "@/data/site-content.json";
@@ -182,7 +183,8 @@ function initMemoryStore(): MemoryStore {
     thumbnail: p.image || `/images/IMG_${7098 + (idx % 10)}.JPG`,
     category: p.category || "Handmade Grip-X Nails",
     collection: "Spring Luxe 2026",
-    shapes: ["Almond", "Coffin", "Square"],
+    productType: "Handmade Press-On Nails",
+    shapes: ["Almond", "Coffin", "Oval", "Round", "Square", "Stiletto"],
     sizes: ["XS", "S", "M", "L", "Custom"],
     tags: ["handmade", "grip-x", "reusable", "trending"],
     featured: idx < 6,
@@ -431,7 +433,7 @@ function initMemoryStore(): MemoryStore {
       image: "/images/IMG_7104.webp",
       description: "Prismatic color-shifting chrome press-on set launching next month.",
       expectedReleaseDate: "2026-10-15",
-      status: "Coming Soon",
+      status: "coming_soon",
       displayOrder: 1,
       createdAt: new Date().toISOString(),
     },
@@ -441,7 +443,7 @@ function initMemoryStore(): MemoryStore {
       image: "/images/IMG_7105.webp",
       description: "Delicate handcrafted bridal collection with genuine crystal charms.",
       expectedReleaseDate: "2026-11-01",
-      status: "Coming Soon",
+      status: "coming_soon",
       displayOrder: 2,
       createdAt: new Date().toISOString(),
     },
@@ -458,7 +460,7 @@ function initMemoryStore(): MemoryStore {
       location: "Miami, FL",
       quantity: "100-250 sets / month",
       message: "Looking to carry X-ON press-on nails for our retail display counter.",
-      status: "New",
+      status: "new",
       adminNotes: "Sent introductory catalog on Sep 22.",
       createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
     },
@@ -472,7 +474,7 @@ function initMemoryStore(): MemoryStore {
       location: "Austin, TX",
       quantity: "50-100 sets / month",
       message: "Interested in wholesale pricing for seasonal collections.",
-      status: "New",
+      status: "new",
       adminNotes: "Waiting for resale tax certificate.",
       createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
     },
@@ -486,7 +488,7 @@ function initMemoryStore(): MemoryStore {
       location: "New York, NY",
       quantity: "200+ sets / month",
       message: "Requesting custom salon retail pricing sheet and sample kit.",
-      status: "Contacted",
+      status: "contacted",
       createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
     },
   ];
@@ -503,7 +505,7 @@ function initMemoryStore(): MemoryStore {
       author: "Mia Nguyen (Master Nail Artist)",
       category: "Nail Care & Tutorials",
       tags: ["tutorials", "press-on tips", "nail care", "diy nail art"],
-      status: "Published",
+      status: "published",
       publishedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
       seoTitle: "How to Make Press-On Nails Last 4 Weeks | X-ON Nails",
       seoDescription: "Learn professional tips to ensure your handmade press-on nails last weeks without lifting.",
@@ -521,7 +523,7 @@ function initMemoryStore(): MemoryStore {
       author: "X-ON Creative Team",
       category: "Trend Reports",
       tags: ["trends", "velvet nails", "french tip"],
-      status: "Published",
+      status: "published",
       publishedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
       seoTitle: "Top 2026 Nail Trends & Styles | X-ON Press-Ons",
       seoDescription: "Discover trending press-on nail shapes and colors for 2026.",
@@ -534,19 +536,19 @@ function initMemoryStore(): MemoryStore {
     {
       id: "nl-1",
       email: "sarah.beauty@example.com",
-      status: "Subscribed",
+      status: "subscribed",
       subscribedAt: new Date(Date.now() - 8 * 86400000).toISOString(),
     },
     {
       id: "nl-2",
       email: "nailart.lover@example.com",
-      status: "Subscribed",
+      status: "subscribed",
       subscribedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
     },
     {
       id: "nl-3",
       email: "katie.nails@example.com",
-      status: "Subscribed",
+      status: "subscribed",
       subscribedAt: new Date().toISOString(),
     },
   ];
@@ -559,7 +561,7 @@ function initMemoryStore(): MemoryStore {
       phone: "+1 407-555-0192",
       subject: "Custom Bridal Nail Sizing Question",
       message: "Hi! I am getting married next month and would love a custom almond set with pearls. How far in advance should I order?",
-      status: "New",
+      status: "new",
       createdAt: new Date().toISOString(),
     },
     {
@@ -569,7 +571,7 @@ function initMemoryStore(): MemoryStore {
       phone: "+1 689-555-8910",
       subject: "Wholesale Sample Inquiry",
       message: "Hello, we operate 3 salons in Florida and want to test your grip-x cold gel glue samples. Please contact us with pricing.",
-      status: "Replied",
+      status: "replied",
       createdAt: new Date(Date.now() - 86400000).toISOString(),
     },
   ];
@@ -1135,7 +1137,7 @@ export const DataStore = {
     const newItem: NewsletterSubscriberItem = {
       id: `nl-${Date.now()}`,
       email,
-      status: "Subscribed",
+      status: "subscribed",
       subscribedAt: new Date().toISOString(),
     };
     store.newsletter.unshift(newItem);
@@ -1169,7 +1171,7 @@ export const DataStore = {
     return list;
   },
   createContactMessage: (
-    data: Omit<ContactMessageItem, "id" | "createdAt" | "status"> & { status?: "New" | "Replied" | "Resolved" }
+    data: Omit<ContactMessageItem, "id" | "createdAt" | "status"> & { status?: ContactMessageStatus }
   ) => {
     const store = getStore();
     const newItem: ContactMessageItem = {
@@ -1179,13 +1181,13 @@ export const DataStore = {
       phone: data.phone || "",
       subject: data.subject || "General Inquiry",
       message: data.message,
-      status: data.status || "New",
+      status: data.status || "new",
       createdAt: new Date().toISOString(),
     };
     store.contactMessages.unshift(newItem);
     return newItem;
   },
-  updateContactMessageStatus: (id: string, status: "New" | "Replied" | "Resolved") => {
+  updateContactMessageStatus: (id: string, status: ContactMessageStatus) => {
     const store = getStore();
     const item = store.contactMessages.find((m) => m.id === id);
     if (!item) return null;
@@ -1226,7 +1228,7 @@ export const DataStore = {
     const totalProducts = store.products.length;
     const totalCustomers = store.customers.length;
     const pendingOrders = store.orders.filter((o) => o.orderStatus === "pending").length;
-    const wholesaleRequests = store.wholesale.filter((w) => w.status === "New").length;
+    const wholesaleRequests = store.wholesale.filter((w) => w.status === "new").length;
 
     // Generate chart data points based on period
     const labels: string[] = [];

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       image,
       description: description || "",
       expectedReleaseDate: body.expectedReleaseDate || "",
-      status: body.status || "Coming Soon",
+      status: body.status || "coming_soon",
       displayOrder: Number(body.displayOrder || 0),
     });
 

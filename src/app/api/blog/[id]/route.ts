@@ -27,7 +27,7 @@ export async function PUT(
 
   try {
     const body = await req.json();
-    if (body.status === "Published" && !body.publishedAt) {
+    if (body.status === "published" && !body.publishedAt) {
       body.publishedAt = new Date().toISOString();
     }
     const updated = DataStore.updateBlog(params.id, body);

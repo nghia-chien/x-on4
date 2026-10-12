@@ -27,8 +27,8 @@ export default function AdminComingSoonPage() {
   const [image, setImage] = useState("/images/IMG_7104.webp");
   const [description, setDescription] = useState("");
   const [expectedReleaseDate, setExpectedReleaseDate] = useState("2026-11-01");
-  const [status, setStatus] = useState<"Coming Soon" | "Published" | "Released" | "Hidden">(
-    "Coming Soon"
+  const [status, setStatus] = useState<ComingSoonItem["status"]>(
+    "coming_soon"
   );
   const [displayOrder, setDisplayOrder] = useState("1");
   const [isSaving, setIsSaving] = useState(false);
@@ -62,7 +62,7 @@ export default function AdminComingSoonPage() {
     setImage("/images/IMG_7104.webp");
     setDescription("");
     setExpectedReleaseDate("2026-11-01");
-    setStatus("Coming Soon");
+    setStatus("coming_soon");
     setDisplayOrder((items.length + 1).toString());
     setModalOpen(true);
   };
@@ -200,9 +200,9 @@ export default function AdminComingSoonPage() {
                   />
                   <span
                     className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase shadow-xs ${
-                      item.status === "Coming Soon"
+                      item.status === "coming_soon"
                         ? "bg-amber-500 text-white"
-                        : item.status === "Published"
+                        : item.status === "published"
                         ? "bg-emerald-600 text-white"
                         : "bg-neutral-800 text-neutral-200"
                     }`}
@@ -343,15 +343,15 @@ export default function AdminComingSoonPage() {
                     value={status}
                     onChange={(e) =>
                       setStatus(
-                        e.target.value as "Coming Soon" | "Published" | "Released" | "Hidden"
+                        e.target.value as ComingSoonItem["status"]
                       )
                     }
                     className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold text-neutral-800 focus:outline-none focus:border-amber-500 focus:bg-white"
                   >
-                    <option value="Coming Soon">Coming Soon</option>
-                    <option value="Published">Published</option>
-                    <option value="Released">Released</option>
-                    <option value="Hidden">Hidden</option>
+                    <option value="coming_soon">Coming Soon</option>
+                    <option value="published">Published</option>
+                    <option value="released">Released</option>
+                    <option value="hidden">Hidden</option>
                   </select>
                 </div>
               </div>

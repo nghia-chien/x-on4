@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DataStore } from "@/lib/dataStore";
 import { requireAuth } from "@/lib/auth";
+import {
+  CONTACT_MESSAGE_STATUSES,
+  ContactMessageStatus,
+} from "@/types/admin";
 
 // GET: List all contact inquiries
 export async function GET(req: NextRequest) {
@@ -69,7 +73,20 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const updated = DataStore.updateContactMessageStatus(id, status);
+    if (!CONTACT_MESSAGE_STATUSES.includes(status as ContactMessageStatus)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Invalid status. Must be one of: ${CONTACT_MESSAGE_STATUSES.join(", ")}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const updated = DataStore.updateContactMessageStatus(
+      id,
+      status as ContactMessageStatus
+    );
     if (!updated) {
       return NextResponse.json(
         { success: false, message: "Message not found" },

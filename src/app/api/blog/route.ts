@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
       author: body.author || "X-ON Team",
       category: body.category || "Nail Trends",
       tags: body.tags || [],
-      status: body.status || "Draft",
-      publishedAt: body.status === "Published" ? new Date().toISOString() : undefined,
+      status: body.status || "draft",
+      publishedAt: body.status === "published" ? new Date().toISOString() : undefined,
       seoTitle: body.seoTitle || title,
       seoDescription: body.seoDescription || body.excerpt || "",
     });

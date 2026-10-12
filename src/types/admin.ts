@@ -3,6 +3,61 @@ export type AdminRole =
   | "Customer"
   | "Wholesale";
 
+export type NailShape =
+  | "Almond"
+  | "Coffin"
+  | "Oval"
+  | "Round"
+  | "Square"
+  | "Stiletto";
+
+export const NAIL_SHAPES: readonly NailShape[] = [
+  "Almond",
+  "Coffin",
+  "Oval",
+  "Round",
+  "Square",
+  "Stiletto",
+] as const;
+
+export type ContactMessageStatus = "new" | "read" | "replied" | "archived";
+export const CONTACT_MESSAGE_STATUSES: readonly ContactMessageStatus[] = [
+  "new",
+  "read",
+  "replied",
+  "archived",
+] as const;
+
+export type WholesaleRequestStatus = "new" | "contacted" | "approved" | "rejected" | "converted";
+export const WHOLESALE_REQUEST_STATUSES: readonly WholesaleRequestStatus[] = [
+  "new",
+  "contacted",
+  "approved",
+  "rejected",
+  "converted",
+] as const;
+
+export type BlogPostStatus = "draft" | "published" | "archived";
+export const BLOG_POST_STATUSES: readonly BlogPostStatus[] = [
+  "draft",
+  "published",
+  "archived",
+] as const;
+
+export type NewsletterStatus = "subscribed" | "unsubscribed";
+export const NEWSLETTER_STATUSES: readonly NewsletterStatus[] = [
+  "subscribed",
+  "unsubscribed",
+] as const;
+
+export type ComingSoonStatus = "coming_soon" | "published" | "released" | "hidden";
+export const COMING_SOON_STATUSES: readonly ComingSoonStatus[] = [
+  "coming_soon",
+  "published",
+  "released",
+  "hidden",
+] as const;
+
 export interface OAuthAccount {
   provider: "google" | "facebook";
   providerAccountId: string;
@@ -40,7 +95,7 @@ export interface ProductItem {
   thumbnail: string;
   category: string;
   collection?: string;
-  shapes: string[];
+  shapes: NailShape[];
   sizes: string[];
   designThemes?: string[];
   colors?: string[];
@@ -157,7 +212,7 @@ export interface ComingSoonItem {
   image: string;
   description: string;
   expectedReleaseDate?: string;
-  status: "Coming Soon" | "Published" | "Released" | "Hidden";
+  status: ComingSoonStatus;
   displayOrder: number;
   createdAt: string;
 }
@@ -169,7 +224,7 @@ export interface ContactMessageItem {
   phone?: string;
   subject: string;
   message: string;
-  status: "New" | "Replied" | "Resolved";
+  status: ContactMessageStatus;
   createdAt: string;
 }
 
@@ -185,7 +240,7 @@ export interface WholesaleRequestItem {
   location?: string;
   quantity?: string;
   message?: string;
-  status: "New" | "Contacted" | "Approved" | "Rejected" | "Converted";
+  status: WholesaleRequestStatus;
   adminNotes?: string;
   createdAt: string;
 }
@@ -200,7 +255,7 @@ export interface BlogPostItem {
   author: string;
   category: string;
   tags: string[];
-  status: "Draft" | "Published" | "Archived";
+  status: BlogPostStatus;
   publishedAt?: string;
   seoTitle?: string;
   seoDescription?: string;
@@ -211,7 +266,7 @@ export interface BlogPostItem {
 export interface NewsletterSubscriberItem {
   id: string;
   email: string;
-  status: "Subscribed" | "Unsubscribed";
+  status: NewsletterStatus;
   subscribedAt: string;
 }
 

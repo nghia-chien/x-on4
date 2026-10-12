@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     // Strictly count ONLY items requiring admin attention (Unread/New/Pending/Processing)
     const wholesaleCount = wholesaleList.filter(
-      (w) => w.status === "New"
+      (w) => w.status === "new"
     ).length;
 
     // VIP Club/Newsletter has no "unread" state, but we count new subscribers in the last 7 days or 0 if none
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     ).length;
 
     const contactCount = contactList.filter(
-      (c) => c.status === "New"
+      (c) => c.status === "new"
     ).length;
 
     const ordersCount = Array.isArray(ordersResult.orders)

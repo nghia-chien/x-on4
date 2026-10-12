@@ -116,9 +116,9 @@ export default function AdminBlogPage() {
           className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-700 focus:outline-none focus:border-amber-500"
         >
           <option value="all">All Articles</option>
-          <option value="Published">Published</option>
-          <option value="Draft">Draft</option>
-          <option value="Archived">Archived</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+          <option value="archived">Archived</option>
         </select>
       </div>
 
@@ -187,9 +187,9 @@ export default function AdminBlogPage() {
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
                         className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase inline-block ${
-                          b.status === "Published"
+                          b.status === "published"
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : b.status === "Draft"
+                            : b.status === "draft"
                             ? "bg-amber-50 text-amber-700 border border-amber-200"
                             : "bg-neutral-100 text-neutral-600 border border-neutral-200"
                         }`}

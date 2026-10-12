@@ -946,7 +946,7 @@ export interface BlogPostData {
   author?: string;
   authorName?: string;
   tags?: string[];
-  status?: "Draft" | "Published" | "Archived";
+  status?: "draft" | "published" | "archived";
   isPublic?: boolean;
   seoTitle?: string;
   seoDescription?: string;
@@ -1053,7 +1053,7 @@ export default function AdminEditor({
 
   const [isPublic, setIsPublic] = useState(
     postToEdit?.status !== undefined
-      ? postToEdit.status === "Published"
+      ? postToEdit.status === "published"
       : true
   );
 
@@ -1871,7 +1871,7 @@ export default function AdminEditor({
         author: authorName,
         authorName,
         tags,
-        status: isPublic ? "Published" : "Draft",
+        status: isPublic ? "published" : "draft",
         isPublic,
         seoTitle: title.trim(),
         seoDescription: metaDesc || summary.trim(),

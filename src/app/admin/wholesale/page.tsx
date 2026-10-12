@@ -27,7 +27,7 @@ export default function AdminWholesalePage() {
   // Notes drawer / modal
   const [activeItem, setActiveItem] = useState<WholesaleRequestItem | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
-  const [status, setStatus] = useState<WholesaleRequestItem["status"]>("New");
+  const [status, setStatus] = useState<WholesaleRequestItem["status"]>("new");
   const [isSaving, setIsSaving] = useState(false);
 
   // Delete modal
@@ -141,11 +141,11 @@ export default function AdminWholesalePage() {
         {(
           [
             { label: "All Inquiries", value: "all" },
-            { label: "New Leads", value: "New" },
-            { label: "Contacted", value: "Contacted" },
-            { label: "Approved Partner", value: "Approved" },
-            { label: "Converted", value: "Converted" },
-            { label: "Rejected", value: "Rejected" },
+            { label: "New Leads", value: "new" },
+            { label: "Contacted", value: "contacted" },
+            { label: "Approved Partner", value: "approved" },
+            { label: "Converted", value: "converted" },
+            { label: "Rejected", value: "rejected" },
           ] as const
         ).map((tab) => (
           <button
@@ -236,11 +236,11 @@ export default function AdminWholesalePage() {
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
                         className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase inline-block ${
-                          w.status === "Approved" || w.status === "Converted"
+                          w.status === "approved" || w.status === "converted"
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : w.status === "Contacted"
+                            : w.status === "contacted"
                             ? "bg-sky-50 text-sky-700 border border-sky-200"
-                            : w.status === "Rejected"
+                            : w.status === "rejected"
                             ? "bg-rose-50 text-rose-700 border border-rose-200"
                             : "bg-amber-50 text-amber-700 border border-amber-200"
                         }`}
@@ -350,11 +350,11 @@ export default function AdminWholesalePage() {
                   }
                   className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-800 focus:outline-none focus:border-amber-500 focus:bg-white"
                 >
-                  <option value="New">New</option>
-                  <option value="Contacted">Contacted</option>
-                  <option value="Approved">Approved</option>
-                  <option value="Converted">Converted to Account</option>
-                  <option value="Rejected">Rejected</option>
+                  <option value="new">New</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="approved">Approved</option>
+                  <option value="converted">Converted to Account</option>
+                  <option value="rejected">Rejected</option>
                 </select>
               </div>
 

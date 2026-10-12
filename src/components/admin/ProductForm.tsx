@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ProductItem } from "@/types/admin";
+import { NailShape, NAIL_SHAPES, ProductItem } from "@/types/admin";
 import { useToast } from "@/context/ToastContext";
 import {
   ArrowLeft,
@@ -26,15 +26,6 @@ interface ProductFormProps {
   initialData?: ProductItem;
   isEdit?: boolean;
 }
-
-const DEFAULT_SHAPES = [
-  "Almond",
-  "Coffin",
-  "Oval",
-  "Round",
-  "Square",
-  "Stiletto",
-];
 
 const DEFAULT_SIZES = ["XS", "S", "M", "L", "Custom"];
 
@@ -70,7 +61,7 @@ const DEFAULT_COLORS = [
 const DEFAULT_LENGTHS = ["Short", "Medium", "Long", "Extra Long"];
 
 const DEFAULT_PRODUCT_TYPES = [
-  "Handmade X-ON Nails",
+  "Handmade Press-On Nails",
   "Best Seller",
   "Cold Gel Glue",
   "Cold Gel Remover",
@@ -176,12 +167,14 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
     initialData?.category || "Handmade Nails"
   );
   const [productType, setProductType] = useState<string>(
-    initialData?.productType || "Handmade X-ON Nails"
+    initialData?.productType || "Handmade Press-On Nails"
   );
 
   // 1. Shapes
-  const [shapes, setShapes] = useState<string[]>(
-    initialData?.shapes && initialData.shapes.length > 0 ? initialData.shapes : ["Almond", "Coffin"]
+  const [shapes, setShapes] = useState<NailShape[]>(
+    initialData?.shapes && initialData.shapes.length > 0
+      ? initialData.shapes
+      : ["Almond", "Coffin"]
   );
 
   // 2. Design Themes
@@ -344,7 +337,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
   };
 
   // 1. Shapes Toggles
-  const toggleShape = (shape: string) => {
+  const toggleShape = (shape: NailShape) => {
     if (shapes.includes(shape)) {
       setShapes(shapes.filter((s) => s !== shape));
     } else {
@@ -814,7 +807,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {DEFAULT_SHAPES.map((shape) => {
+                {NAIL_SHAPES.map((shape) => {
                   const isSelected = shapes.includes(shape);
                   return (
                     <button

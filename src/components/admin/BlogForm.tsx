@@ -27,7 +27,7 @@ export function BlogForm({ initialData, isEdit = false }: BlogFormProps) {
         author: data.authorName || data.author || "X-ON Nail Artist",
         category: data.category || "Nail Tutorials & Care",
         tags: data.tags || initialData?.tags || [],
-        status: data.status || (data.isPublic ? "Published" : "Draft"),
+        status: data.status || (data.isPublic ? "published" : "draft"),
         seoTitle: data.seoTitle || data.title,
         seoDescription: data.seoDescription || data.summary || data.excerpt || "",
       };
@@ -78,7 +78,7 @@ export function BlogForm({ initialData, isEdit = false }: BlogFormProps) {
         authorName: initialData.author,
         tags: initialData.tags,
         status: initialData.status,
-        isPublic: initialData.status === "Published",
+        isPublic: initialData.status === "published",
         seoTitle: initialData.seoTitle,
         seoDescription: initialData.seoDescription,
         metaDesc: initialData.seoDescription,
