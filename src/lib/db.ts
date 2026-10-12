@@ -23,6 +23,10 @@ if (!global.mongooseCache) {
   global.mongooseCache = cached;
 }
 
+function isVercelRuntime(): boolean {
+  return process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
+}
+
 function isSrvFailure(error: unknown): boolean {
   const err = error as { code?: string; syscall?: string; message?: string };
   const msg = String(err?.message || error || "");
@@ -36,7 +40,7 @@ function isSrvFailure(error: unknown): boolean {
   );
 }
 
-/** Dedicated resolver — global dns.setServers is unreliable under Next.js/Turbopack. */
+/** Dedicated resolver — used only as a Windows/local fallback when querySrv breaks. */
 function publicResolver() {
   const resolver = new dns.promises.Resolver();
   resolver.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
@@ -45,6 +49,7 @@ function publicResolver() {
 
 /**
  * Convert mongodb+srv:// → mongodb:// host list using an explicit public DNS resolver.
+ * Avoid on Vercel — native SRV works there; custom DNS to 8.8.8.8 can hang/fail.
  */
 async function buildStandardUriFromSrv(srvUri: string): Promise<string> {
   const parsed = new URL(srvUri);
@@ -92,18 +97,40 @@ async function buildStandardUriFromSrv(srvUri: string): Promise<string> {
 async function connectWithUri(uri: string): Promise<typeof mongoose> {
   return mongoose.connect(uri, {
     bufferCommands: false,
-    serverSelectionTimeoutMS: 12_000,
+    // Serverless-friendly: few sockets per isolate
+    maxPoolSize: isVercelRuntime() ? 5 : 10,
+    minPoolSize: 0,
+    serverSelectionTimeoutMS: isVercelRuntime() ? 8_000 : 12_000,
+    socketTimeoutMS: 45_000,
+    maxIdleTimeMS: 60_000,
     family: 4,
   });
 }
 
+function pickMongoUri(): string | undefined {
+  const srv = process.env.MONGODB_URI?.trim();
+  const standard = process.env.MONGODB_URI_STANDARD?.trim();
+
+  // Vercel / Linux: prefer native mongodb+srv (driver DNS works)
+  if (isVercelRuntime()) {
+    return srv || standard;
+  }
+
+  // Windows local: prefer non-SRV seed list to avoid querySrv ECONNREFUSED
+  if (process.platform === "win32") {
+    return standard || srv;
+  }
+
+  return srv || standard;
+}
+
 export async function connectToDatabase(): Promise<typeof mongoose | null> {
-  // Prefer non-SRV URI when provided (avoids querySrv entirely on Windows/Next)
-  const MONGODB_URI =
-    process.env.MONGODB_URI_STANDARD?.trim() ||
-    process.env.MONGODB_URI?.trim();
+  const MONGODB_URI = pickMongoUri();
 
   if (!MONGODB_URI) {
+    console.error(
+      "[MongoDB] Missing MONGODB_URI (set it in Vercel → Project → Settings → Environment Variables)"
+    );
     return null;
   }
 
@@ -114,13 +141,31 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
   if (!cached.promise) {
     cached.promise = (async () => {
       const isSrv = MONGODB_URI.startsWith("mongodb+srv://");
+      const onVercel = isVercelRuntime();
 
-      // Already a standard seed-list URI — connect directly
+      // Standard seed-list URI — connect directly
       if (!isSrv) {
         return connectWithUri(MONGODB_URI);
       }
 
-      // Resolve SRV via public Resolver first (skips broken Node querySrv)
+      // Vercel / non-Windows: native SRV first (correct path for Atlas + serverless)
+      if (onVercel || process.platform !== "win32") {
+        try {
+          return await connectWithUri(MONGODB_URI);
+        } catch (firstError) {
+          console.warn(
+            "[MongoDB] Native SRV connect failed:",
+            firstError instanceof Error ? firstError.message : firstError
+          );
+          if (isSrvFailure(firstError) && !onVercel) {
+            const standardUri = await buildStandardUriFromSrv(MONGODB_URI);
+            return connectWithUri(standardUri);
+          }
+          throw firstError;
+        }
+      }
+
+      // Windows local: resolve SRV via public DNS, then fall back to native
       try {
         const standardUri = await buildStandardUriFromSrv(MONGODB_URI);
         return await connectWithUri(standardUri);
@@ -135,7 +180,6 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
         return await connectWithUri(MONGODB_URI);
       } catch (firstError) {
         if (isSrvFailure(firstError)) {
-          // Last attempt: resolve again then connect (in case transient)
           const standardUri = await buildStandardUriFromSrv(MONGODB_URI);
           return connectWithUri(standardUri);
         }
@@ -149,7 +193,14 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
     return cached.conn;
   } catch (e) {
     cached.promise = null;
-    console.error("Failed to connect to MongoDB:", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[MongoDB] Failed to connect:", msg);
+    // Common Vercel cause: Atlas Network Access does not allow 0.0.0.0/0
+    if (msg.includes("whitelist") || msg.includes("IP that isn't")) {
+      console.error(
+        "[MongoDB] Fix: Atlas → Network Access → Allow Access from Anywhere (0.0.0.0/0)"
+      );
+    }
     return null;
   }
 }
