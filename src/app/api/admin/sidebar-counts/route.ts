@@ -1,7 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { DataStore } from "@/lib/dataStore";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { errorResponse } = await requireAuth(req);
+  if (errorResponse) return errorResponse;
   try {
     const wholesaleList = DataStore.getWholesale();
     const newsletterList = DataStore.getNewsletter();

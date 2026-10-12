@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DataStore } from "@/lib/dataStore";
+import { requireAuth } from "@/lib/auth";
 
 // GET: List all contact inquiries
 export async function GET(req: NextRequest) {
+  const { errorResponse } = await requireAuth(req);
+  if (errorResponse) return errorResponse;
   try {
     const searchParams = req.nextUrl.searchParams;
     const status = searchParams.get("status") || undefined;
@@ -52,6 +55,9 @@ export async function POST(req: NextRequest) {
 
 // PUT: Update inquiry status (New -> Replied / Resolved)
 export async function PUT(req: NextRequest) {
+  const { errorResponse } = await requireAuth(req);
+  if (errorResponse) return errorResponse;
+
   try {
     const body = await req.json();
     const { id, status } = body;
@@ -83,6 +89,8 @@ export async function PUT(req: NextRequest) {
 
 // DELETE: Remove an inquiry
 export async function DELETE(req: NextRequest) {
+  const { errorResponse } = await requireAuth(req);
+  if (errorResponse) return errorResponse;
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

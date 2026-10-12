@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { DataStore } from "@/lib/dataStore";
+import { ProductItem } from "@/types/admin";
 import productsJson from "@/data/products.json";
 
 export async function GET(
@@ -18,8 +19,8 @@ export async function GET(
 
   // Fallback to static products.json
   if (!product) {
-    const rawStatic = productsJson.find(
-      (p) =>
+    const rawStatic: any = (productsJson as any[]).find(
+      (p: any) =>
         p.id?.toLowerCase() === decodedId ||
         p.slug?.toLowerCase() === decodedId ||
         p.id === rawId ||
@@ -30,7 +31,7 @@ export async function GET(
         id: rawStatic.id,
         name: rawStatic.title,
         slug: rawStatic.slug,
-        sku: rawStatic.id.toUpperCase(),
+        sku: rawStatic.id?.toUpperCase() || "XON-0000",
         description:
           "Handmade luxury press-on nails crafted with ultra-durable Grip-X technology and Cold Gel Tech. Reusable up to 5x with proper care.",
         shortDescription: "Artisan handcrafted cold-gel press-on nails",
@@ -117,7 +118,32 @@ export async function PUT(
       }
     }
 
-    const updated = DataStore.updateProduct(params.id, body);
+    // Whitelist allowed fields to prevent mass assignment (id, createdAt cannot be overwritten)
+    const allowedUpdate: Partial<ProductItem> = {};
+    if (body.name !== undefined) allowedUpdate.name = body.name.trim();
+    if (body.slug !== undefined) allowedUpdate.slug = body.slug.trim();
+    if (body.sku !== undefined) allowedUpdate.sku = body.sku.trim();
+    if (body.description !== undefined) allowedUpdate.description = body.description;
+    if (body.shortDescription !== undefined) allowedUpdate.shortDescription = body.shortDescription;
+    if (body.price !== undefined) allowedUpdate.price = Number(body.price);
+    if (body.salePrice !== undefined) allowedUpdate.salePrice = body.salePrice === null || body.salePrice === "" ? null : Number(body.salePrice);
+    if (body.stock !== undefined) allowedUpdate.stock = Number(body.stock);
+    if (body.sizeStock !== undefined) allowedUpdate.sizeStock = body.sizeStock;
+    if (Array.isArray(body.images)) allowedUpdate.images = body.images;
+    if (body.thumbnail !== undefined) allowedUpdate.thumbnail = body.thumbnail;
+    if (body.category !== undefined) allowedUpdate.category = body.category;
+    if (body.collection !== undefined) allowedUpdate.collection = body.collection;
+    if (Array.isArray(body.shapes)) allowedUpdate.shapes = body.shapes;
+    if (Array.isArray(body.sizes)) allowedUpdate.sizes = body.sizes;
+    if (Array.isArray(body.tags)) allowedUpdate.tags = body.tags;
+    if (body.featured !== undefined) allowedUpdate.featured = Boolean(body.featured);
+    if (body.bestSeller !== undefined) allowedUpdate.bestSeller = Boolean(body.bestSeller);
+    if (body.comingSoon !== undefined) allowedUpdate.comingSoon = Boolean(body.comingSoon);
+    if (body.status === "active" || body.status === "draft" || body.status === "archived") {
+      allowedUpdate.status = body.status;
+    }
+
+    const updated = DataStore.updateProduct(params.id, allowedUpdate);
     if (!updated) {
       return NextResponse.json(
         { success: false, message: "Product not found" },

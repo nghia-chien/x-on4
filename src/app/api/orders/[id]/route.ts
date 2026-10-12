@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { DataStore } from "@/lib/dataStore";
+import { OrderItem } from "@/types/admin";
 
 export async function GET(
   req: NextRequest,
@@ -30,7 +31,32 @@ export async function PUT(
 
   try {
     const body = await req.json();
-    const updated = DataStore.updateOrder(params.id, body);
+
+    // Whitelist allowed fields to prevent mass assignment (id, orderNumber, items, total, customer cannot be tampered)
+    const allowedUpdate: Partial<OrderItem> = {};
+    if (
+      body.orderStatus === "pending" ||
+      body.orderStatus === "processing" ||
+      body.orderStatus === "shipped" ||
+      body.orderStatus === "delivered" ||
+      body.orderStatus === "cancelled" ||
+      body.orderStatus === "refunded"
+    ) {
+      allowedUpdate.orderStatus = body.orderStatus;
+    }
+    if (
+      body.paymentStatus === "pending" ||
+      body.paymentStatus === "paid" ||
+      body.paymentStatus === "failed" ||
+      body.paymentStatus === "refunded"
+    ) {
+      allowedUpdate.paymentStatus = body.paymentStatus;
+    }
+    if (typeof body.trackingNumber === "string") allowedUpdate.trackingNumber = body.trackingNumber.trim();
+    if (typeof body.notes === "string") allowedUpdate.notes = body.notes.trim();
+    if (typeof body.shippingAddress === "string") allowedUpdate.shippingAddress = body.shippingAddress.trim();
+
+    const updated = DataStore.updateOrder(params.id, allowedUpdate);
     if (!updated) {
       return NextResponse.json(
         { success: false, message: "Order not found" },
