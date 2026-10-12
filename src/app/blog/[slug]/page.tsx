@@ -3,7 +3,6 @@
 import React, { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import siteContent from "@/data/site-content.json";
 import { ArrowLeft, ArrowRight, Sparkles, Clock, BookOpen } from "lucide-react";
 import ArticleBody from "@/components/blog/ArticleBody";
 
@@ -34,44 +33,66 @@ export default function BlogPostDetailPage({
   const slug = resolvedParams.slug;
 
   const [post, setPost] = useState<BlogPost | null>(null);
+  const [otherPosts, setOtherPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadPost() {
       setIsLoading(true);
       try {
-        // 1. Try fetching from dynamic API
-        const res = await fetch(`/api/blog/${slug}`);
-        if (res.ok) {
-          const json = await res.json();
+        const [detailRes, listRes] = await Promise.all([
+          fetch(`/api/blog/${encodeURIComponent(slug)}`),
+          fetch("/api/blog?status=published"),
+        ]);
+
+        if (detailRes.ok) {
+          const json = await detailRes.json();
           if (json.success && json.data) {
+            const published = json.data.publishedAt || json.data.createdAt;
             setPost({
               ...json.data,
               image: json.data.thumbnail || json.data.image,
-              date: json.data.createdAt
-                ? new Date(json.data.createdAt).toLocaleDateString("en-US", {
+              date: published
+                ? new Date(published).toLocaleDateString("en-US", {
                     month: "long",
                     day: "numeric",
                     year: "numeric",
                   })
                 : "Recent",
             });
-            setIsLoading(false);
-            return;
+          } else {
+            setPost(null);
+          }
+        } else {
+          setPost(null);
+        }
+
+        if (listRes.ok) {
+          const listJson = await listRes.json();
+          if (listJson.success && Array.isArray(listJson.data)) {
+            setOtherPosts(
+              listJson.data
+                .filter((p: BlogPost) => p.slug !== slug)
+                .slice(0, 2)
+                .map((p: BlogPost & { publishedAt?: string; createdAt?: string; thumbnail?: string }) => ({
+                  ...p,
+                  image: p.thumbnail || p.image,
+                  date: p.publishedAt || p.createdAt
+                    ? new Date(String(p.publishedAt || p.createdAt)).toLocaleDateString(
+                        "en-US",
+                        { month: "long", day: "numeric", year: "numeric" }
+                      )
+                    : "Recent",
+                }))
+            );
           }
         }
       } catch (err) {
         console.error("Fetch blog error", err);
+        setPost(null);
+      } finally {
+        setIsLoading(false);
       }
-
-      // 2. Fallback to siteContent.json
-      const staticPost = siteContent.blogPosts?.find(
-        (p: BlogPost) => p.slug === slug
-      );
-      if (staticPost) {
-        setPost(staticPost);
-      }
-      setIsLoading(false);
     }
 
     loadPost();
@@ -102,10 +123,6 @@ export default function BlogPostDetailPage({
       </div>
     );
   }
-
-  const otherPosts = siteContent.blogPosts
-    ?.filter((p: BlogPost) => p.slug !== slug)
-    .slice(0, 2);
 
   return (
     <div

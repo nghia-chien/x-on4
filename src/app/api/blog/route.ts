@@ -1,14 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { DataStore } from "@/lib/dataStore";
+import {
+  createBlog,
+  listBlogs,
+  MongoUnavailableError,
+  normalizeBlogStatus,
+  normalizeLegacyBlogStatuses,
+} from "@/lib/blogRepository";
+
+function mongoErrorResponse(error: unknown) {
+  if (error instanceof MongoUnavailableError) {
+    return NextResponse.json(
+      { success: false, message: "Blog database unavailable" },
+      { status: 503 }
+    );
+  }
+  console.error("Blog API error:", error);
+  return NextResponse.json(
+    { success: false, message: "Failed to process blog request" },
+    { status: 500 }
+  );
+}
 
 export async function GET(req: NextRequest) {
-  const searchParams = req.nextUrl.searchParams;
-  const status = searchParams.get("status") || undefined;
-  const search = searchParams.get("search") || undefined;
+  try {
+    // Heal legacy Title-Case statuses once per process cold start (idempotent)
+    await normalizeLegacyBlogStatuses().catch(() => 0);
 
-  const blogs = DataStore.getBlogs({ status, search });
-  return NextResponse.json({ success: true, data: blogs });
+    const searchParams = req.nextUrl.searchParams;
+    const status = searchParams.get("status") || undefined;
+    const search = searchParams.get("search") || undefined;
+
+    const blogs = await listBlogs({ status, search });
+    return NextResponse.json({ success: true, data: blogs });
+  } catch (error) {
+    return mongoErrorResponse(error);
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -33,27 +60,26 @@ export async function POST(req: NextRequest) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
 
-    const newBlog = DataStore.createBlog({
+    const status = normalizeBlogStatus(body.status || "draft");
+
+    const newBlog = await createBlog({
       title,
       slug: autoSlug,
       excerpt: body.excerpt || "",
       content,
-      thumbnail: body.thumbnail || "/images/IMG_7098.webp",
+      thumbnail: body.thumbnail || "",
       author: body.author || "X-ON Team",
       category: body.category || "Nail Trends",
       tags: body.tags || [],
-      status: body.status || "draft",
-      publishedAt: body.status === "published" ? new Date().toISOString() : undefined,
+      status,
+      publishedAt:
+        status === "published" ? new Date().toISOString() : undefined,
       seoTitle: body.seoTitle || title,
       seoDescription: body.seoDescription || body.excerpt || "",
     });
 
     return NextResponse.json({ success: true, data: newBlog }, { status: 201 });
   } catch (error) {
-    console.error("Create blog error:", error);
-    return NextResponse.json(
-      { success: false, message: "Failed to create blog post" },
-      { status: 500 }
-    );
+    return mongoErrorResponse(error);
   }
 }

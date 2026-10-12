@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { BlogPostItem } from "@/types/admin";
-import { ArrowRight, BookOpen, Clock, Sparkles } from "lucide-react";
+import { ArrowRight, Clock, Sparkles } from "lucide-react";
 
 interface Post {
   title: string;
@@ -16,105 +16,91 @@ interface Post {
   excerpt: string;
 }
 
-const defaultBlogPosts: Post[] = [
-  {
-    title: "Extra-Long Handmade Nail Luxury: The New Era of Wearable Art",
-    slug: "extra-long-handmade-nail-luxury",
-    date: "July 22, 2026",
-    image: "/images/IMG_7098.webp",
-    category: "Haute Manicure",
-    readTime: "4 min read",
-    excerpt:
-      "Why modern women are trading hours at the salon chair for reusable, handcrafted high-fashion manicures built with professional-grade gel and acrylic powder.",
-  },
-  {
-    title: "Salon-Quality Handmade Nails, Reimagined for Modern Life",
-    slug: "salon-quality-handmade-nails-reimagined-for-home",
-    date: "July 22, 2026",
-    image: "/images/IMG_7099.webp",
-    category: "Artisanal Craft",
-    readTime: "3 min read",
-    excerpt:
-      "The delicate difference between mass-molded plastic and hand-sculpted gel architecture that naturally hugs your nail bed.",
-  },
-  {
-    title: "The 10-Minute At-Home Salon Ritual: Fast, Gentle & Flawless",
-    slug: "apply-gripx-nails",
-    date: "December 10, 2025",
-    image: "/images/IMG_7100.webp",
-    category: "Beauty Rituals",
-    readTime: "3 min read",
-    excerpt:
-      "A step-by-step masterclass on room-temperature Cold Gel application for weeks of damage-free, zero-UV salon hold.",
-  },
-  {
-    title: "Effortless Elegance: Why Less Damage Means More Beautiful Nails",
-    slug: "post-1",
-    date: "December 10, 2025",
-    image: "/images/IMG_7101.webp",
-    category: "Nail Health & Trends",
-    readTime: "2 min read",
-    excerpt:
-      "Discover why modern beauty enthusiasts are preserving their natural nail strength without compromising on runway-ready glam.",
-  },
-];
-
-const CATEGORIES = ["All Editions", "Haute Manicure", "Artisanal Craft", "Beauty Rituals", "Nail Health & Trends"];
+const FALLBACK_IMAGE = "/images/IMG_7098.webp";
 
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9776c]";
 
+function estimateReadTime(content: string, excerpt: string): string {
+  const text = `${excerpt || ""} ${content || ""}`.trim();
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.round(words / 200));
+  return `${minutes} min read`;
+}
+
+function mapBlogToPost(b: BlogPostItem): Post {
+  return {
+    title: b.title,
+    slug: b.slug,
+    date: b.publishedAt || b.createdAt
+      ? new Date(b.publishedAt || b.createdAt).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "Recent",
+    image: b.thumbnail || FALLBACK_IMAGE,
+    category: b.category || "Editorial",
+    readTime: estimateReadTime(b.content || "", b.excerpt || ""),
+    excerpt:
+      b.excerpt ||
+      (b.content
+        ? `${b.content.replace(/[#*_>~[\]]/g, "").slice(0, 140).trim()}...`
+        : "Explore this feature story from our beauty editors."),
+  };
+}
+
 export default function BlogIndexPage() {
-  const [posts, setPosts] = useState<Post[]>(defaultBlogPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState("All Editions");
 
   useEffect(() => {
-    async function fetchDynamicPosts() {
+    async function fetchPosts() {
+      setIsLoading(true);
+      setLoadError(null);
       try {
-        const res = await fetch("/api/blog?status=Published");
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            const mappedDynamic: Post[] = json.data.map((b: BlogPostItem, idx: number) => ({
-              title: b.title,
-              slug: b.slug,
-              date: b.publishedAt || b.createdAt
-                ? new Date(b.publishedAt || b.createdAt).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })
-                : "Recent",
-              image: b.thumbnail || defaultBlogPosts[idx % defaultBlogPosts.length].image,
-              category: b.tags && b.tags[0] ? b.tags[0] : "Editorial",
-              readTime: "3 min read",
-              excerpt:
-                b.excerpt ||
-                (b.content && typeof b.content === "string" ? b.content.slice(0, 140) + "..." : "Explore this feature story from our beauty editors."),
-            }));
-
-            const existingSlugs = new Set(mappedDynamic.map((d) => d.slug));
-            const filteredDefaults = defaultBlogPosts.filter(
-              (p) => !existingSlugs.has(p.slug)
-            );
-            setPosts([...mappedDynamic, ...filteredDefaults]);
-          }
+        const res = await fetch("/api/blog?status=published");
+        if (!res.ok) throw new Error("Failed to load articles");
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setPosts(json.data.map(mapBlogToPost));
+        } else {
+          setPosts([]);
         }
       } catch (e) {
         console.error("Error loading blog posts:", e);
+        setLoadError("We couldn't load articles right now.");
+        setPosts([]);
+      } finally {
+        setIsLoading(false);
       }
     }
 
-    fetchDynamicPosts();
+    fetchPosts();
   }, []);
+
+  const categories = useMemo(() => {
+    const fromPosts = Array.from(
+      new Set(posts.map((p) => p.category).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+    return ["All Editions", ...fromPosts];
+  }, [posts]);
 
   const filteredPosts =
     activeCategory === "All Editions"
       ? posts
-      : posts.filter((p) => p.category.toLowerCase().includes(activeCategory.toLowerCase()));
+      : posts.filter(
+          (p) => p.category.toLowerCase() === activeCategory.toLowerCase()
+        );
 
-  const coverStory = posts[0];
-  const gridStories = filteredPosts.length > 1 ? filteredPosts.slice(1) : filteredPosts;
+  const coverStory =
+    activeCategory === "All Editions" ? posts[0] : filteredPosts[0];
+  const gridStories =
+    activeCategory === "All Editions"
+      ? posts.slice(1)
+      : filteredPosts.slice(coverStory ? 1 : 0);
 
   return (
     <div
@@ -130,7 +116,6 @@ export default function BlogIndexPage() {
         `,
       }}
     >
-      {/* Organic mottled diffused ambient blobs */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 -left-20 w-[500px] h-[500px] rounded-full bg-[#f6c9c1]/40 blur-[100px]" />
         <div className="absolute top-20 -right-32 w-[550px] h-[550px] rounded-full bg-[#faece9]/80 blur-[110px]" />
@@ -140,9 +125,7 @@ export default function BlogIndexPage() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
-        {/* 1. EDITORIAL MAGAZINE MASTHEAD */}
         <header className="text-center pt-2 pb-4 space-y-4 max-w-3xl mx-auto">
-
           <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-gray-900 leading-tight">
             The Beauty &amp; Artistry Edit
           </h1>
@@ -153,9 +136,8 @@ export default function BlogIndexPage() {
             Curated narratives on bespoke nail craftsmanship, seasonal silhouettes, and modern beauty rituals designed for women who appreciate timeless detail.
           </p>
 
-          {/* Category Filter Pills (Responsive Flex-Wrap Layout without Horizontal Scrollbar) */}
           <div className="pt-4 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5 max-w-2xl mx-auto">
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 type="button"
@@ -172,11 +154,25 @@ export default function BlogIndexPage() {
           </div>
         </header>
 
-        {/* 2. COVER STORY FEATURE (Magazine Lead Story) */}
-        {coverStory && activeCategory === "All Editions" && (
+        {isLoading && (
+          <div className="py-16 text-center text-xs text-gray-500">
+            Loading articles...
+          </div>
+        )}
+
+        {!isLoading && loadError && (
+          <div className="py-16 text-center text-xs text-rose-600">{loadError}</div>
+        )}
+
+        {!isLoading && !loadError && posts.length === 0 && (
+          <div className="py-16 text-center text-xs text-gray-500">
+            No published articles yet.
+          </div>
+        )}
+
+        {!isLoading && coverStory && activeCategory === "All Editions" && (
           <section className="overflow-hidden rounded-3xl border border-[#eedad7] bg-white/90 backdrop-blur-xs shadow-sm transition-all hover:shadow-md">
             <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch">
-              {/* Image Col */}
               <div className="relative min-h-[320px] sm:min-h-[420px] lg:col-span-7 lg:min-h-full overflow-hidden bg-[#f6e6e2]">
                 <Link href={`/blog/${coverStory.slug}`} className="block relative w-full h-full group">
                   <Image
@@ -195,7 +191,6 @@ export default function BlogIndexPage() {
                 </Link>
               </div>
 
-              {/* Text Editorial Col */}
               <div className="flex flex-col justify-between p-7 sm:p-10 lg:col-span-5 lg:p-12 space-y-6">
                 <div className="space-y-3.5">
                   <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#c9776c]">
@@ -207,9 +202,7 @@ export default function BlogIndexPage() {
                   </div>
 
                   <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-semibold text-gray-900 leading-tight hover:text-[#c9776c] transition-colors">
-                    <Link href={`/blog/${coverStory.slug}`}>
-                      {coverStory.title}
-                    </Link>
+                    <Link href={`/blog/${coverStory.slug}`}>{coverStory.title}</Link>
                   </h2>
 
                   <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-light">
@@ -234,83 +227,81 @@ export default function BlogIndexPage() {
           </section>
         )}
 
-        {/* 3. EDITORIAL ARTICLES GRID */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-[#eedad7] pb-3">
-            <span className="text-xs font-bold uppercase tracking-[0.25em] text-[#c9776c]">
-              Curated Articles
-            </span>
-            <span className="text-xs text-gray-500 font-serif italic">
-              Showing {filteredPosts.length} Editions
-            </span>
-          </div>
+        {!isLoading && filteredPosts.length > 0 && (
+          <section className="space-y-6">
+            <div className="flex items-center justify-between border-b border-[#eedad7] pb-3">
+              <span className="text-xs font-bold uppercase tracking-[0.25em] text-[#c9776c]">
+                Curated Articles
+              </span>
+              <span className="text-xs text-gray-500 font-serif italic">
+                Showing {filteredPosts.length} Editions
+              </span>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {gridStories.map((post) => (
-              <article
-                key={post.slug}
-                className="group flex flex-col rounded-2xl border border-[#eedad7] bg-white overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300"
-              >
-                {/* 4:3 Aspect Image */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#f6e6e2]/40">
-                  <Link href={`/blog/${post.slug}`} className="block relative w-full h-full">
-                    <Image
-                      src={post.image}
-                      alt={post.title}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </Link>
-                  <div className="absolute top-3 left-3 pointer-events-none">
-                    <span className="rounded-full bg-white/90 backdrop-blur-xs px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#c9776c] shadow-2xs border border-[#eedad7]">
-                      {post.category}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-5 sm:p-6 flex flex-col flex-1 justify-between space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[11px] text-gray-400">
-                      <span>{post.date}</span>
-                      <span>&bull;</span>
-                      <span>{post.readTime}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {(activeCategory === "All Editions" ? gridStories : filteredPosts).map(
+                (post) => (
+                  <article
+                    key={post.slug}
+                    className="group flex flex-col rounded-2xl border border-[#eedad7] bg-white overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#f6e6e2]/40">
+                      <Link href={`/blog/${post.slug}`} className="block relative w-full h-full">
+                        <Image
+                          src={post.image}
+                          alt={post.title}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </Link>
+                      <div className="absolute top-3 left-3 pointer-events-none">
+                        <span className="rounded-full bg-white/90 backdrop-blur-xs px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#c9776c] shadow-2xs border border-[#eedad7]">
+                          {post.category}
+                        </span>
+                      </div>
                     </div>
 
-                    <h3 className="font-serif text-lg sm:text-xl font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#c9776c] transition-colors">
-                      <Link href={`/blog/${post.slug}`} className={focusRing}>
-                        {post.title}
-                      </Link>
-                    </h3>
+                    <div className="p-5 sm:p-6 flex flex-col flex-1 justify-between space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                          <span>{post.date}</span>
+                          <span>&bull;</span>
+                          <span>{post.readTime}</span>
+                        </div>
 
-                    <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed font-light">
-                      {post.excerpt}
-                    </p>
-                  </div>
+                        <h3 className="font-serif text-lg sm:text-xl font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#c9776c] transition-colors">
+                          <Link href={`/blog/${post.slug}`} className={focusRing}>
+                            {post.title}
+                          </Link>
+                        </h3>
 
-                  <div className="pt-3 border-t border-[#eedad7]/50 flex items-center justify-between text-xs font-bold uppercase tracking-wider">
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="inline-flex items-center gap-1.5 text-gray-900 hover:text-[#c9776c] transition-colors"
-                    >
-                      Read Article <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+                        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed font-light">
+                          {post.excerpt}
+                        </p>
+                      </div>
 
-        {/* 4 & 5. COMBINED EDITORIAL QUOTE & COMMERCE INVITATION BANNER */}
+                      <div className="pt-3 border-t border-[#eedad7]/50 flex items-center justify-between text-xs font-bold uppercase tracking-wider">
+                        <Link
+                          href={`/blog/${post.slug}`}
+                          className="inline-flex items-center gap-1.5 text-gray-900 hover:text-[#c9776c] transition-colors"
+                        >
+                          Read Article <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                )
+              )}
+            </div>
+          </section>
+        )}
+
         <section className="relative overflow-hidden rounded-3xl bg-neutral-950 text-white p-8 sm:p-14 shadow-lg border border-neutral-800">
-          {/* Subtle Ambient Glow */}
           <div aria-hidden className="pointer-events-none absolute -top-32 -right-20 w-80 h-80 rounded-full bg-[#c9776c]/15 blur-3xl" />
           <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-[#faece9]/10 blur-3xl" />
 
           <div className="relative z-10 max-w-3xl mx-auto text-center space-y-8">
-            {/* Quote Block */}
             <div className="space-y-3">
               <span className="font-serif text-5xl sm:text-6xl text-[#c9776c]/50 select-none block leading-none">
                 &ldquo;
@@ -325,7 +316,6 @@ export default function BlogIndexPage() {
 
             <div className="w-16 h-px bg-neutral-800 mx-auto" />
 
-            {/* Commerce Invitation */}
             <div className="space-y-3">
               <div className="pt-2">
                 <Link
