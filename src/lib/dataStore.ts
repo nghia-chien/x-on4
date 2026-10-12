@@ -43,40 +43,74 @@ declare global {
 }
 
 function initMemoryStore(): MemoryStore {
-  const passwordHash = bcrypt.hashSync("Admin@123456", 10);
+  const initialAdmins: AdminUserWithPassword[] = [];
 
-  const initialAdmins: AdminUserWithPassword[] = [
-    {
-      id: "admin-1",
-      name: "Master Admin",
-      email: "admin@xonails.com",
-      role: "Admin",
-      status: "active",
-      passwordHash,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-    },
-    {
-      id: "admin-2",
-      name: "Wholesale User",
-      email: "wholesale@xonails.com",
-      role: "Wholesale",
-      status: "active",
-      passwordHash,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-    },
-    {
-      id: "admin-3",
-      name: "VIP Customer",
-      email: "customer@xonails.com",
-      role: "Customer",
-      status: "active",
-      passwordHash,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-    },
-  ];
+  // Seed demo accounts ONLY when ALLOW_DEMO_ACCOUNTS === "true" (default off)
+  if (process.env.ALLOW_DEMO_ACCOUNTS === "true") {
+    const demoPasswordHash = bcrypt.hashSync("Admin@123456", 10);
+    initialAdmins.push(
+      {
+        id: "admin-1",
+        name: "Master Admin",
+        email: "admin@xonails.com",
+        role: "Admin",
+        status: "active",
+        passwordHash: demoPasswordHash,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      },
+      {
+        id: "admin-2",
+        name: "Wholesale User",
+        email: "wholesale@xonails.com",
+        role: "Wholesale",
+        status: "active",
+        passwordHash: demoPasswordHash,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      },
+      {
+        id: "admin-3",
+        name: "VIP Customer",
+        email: "customer@xonails.com",
+        role: "Customer",
+        status: "active",
+        passwordHash: demoPasswordHash,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      }
+    );
+  }
+
+  // Bootstrap Admin account from environment variables (idempotent, min 12 chars password, valid email)
+  const envEmail = process.env.ADMIN_EMAIL?.trim();
+  const envPassword = process.env.ADMIN_PASSWORD;
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (envEmail || envPassword) {
+    if (!envEmail || !EMAIL_REGEX.test(envEmail)) {
+      console.error("[Auth Bootstrap] ADMIN_EMAIL is missing or invalid email format. Admin account not created.");
+    } else if (!envPassword || envPassword.length < 12) {
+      console.error("[Auth Bootstrap] ADMIN_PASSWORD must be at least 12 characters long. Admin account not created.");
+    } else {
+      const existing = initialAdmins.find((u) => u.email.toLowerCase() === envEmail.toLowerCase());
+      if (!existing) {
+        initialAdmins.unshift({
+          id: `admin-env-bootstrap`,
+          name: "Admin",
+          email: envEmail.toLowerCase(),
+          role: "Admin",
+          status: "active",
+          passwordHash: bcrypt.hashSync(envPassword, 10),
+          createdAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+        });
+        console.log(`[Auth Bootstrap] Initialized primary Admin user for: ${envEmail}`);
+      }
+    }
+  } else {
+    console.error("[Auth Bootstrap] ADMIN_EMAIL or ADMIN_PASSWORD not configured. No bootstrap admin created.");
+  }
 
   const initialCategories: CategoryItem[] = [
     {

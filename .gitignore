@@ -44,7 +44,7 @@ next-env.d.ts
 # User-specific skills (not part of the template)
 .claude/skills/customize/
 .claude/skills/release/
-
+.claude/commands/clone-website.md
 # Local temp files
 temp/
 Blog-project/

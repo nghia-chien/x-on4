@@ -1,4 +1,12 @@
 import mongoose from "mongoose";
+import dns from "dns";
+
+// Fix for Node.js DNS SRV resolution issues on Windows environments
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch {
+  // Ignore in environments where setting DNS is restricted
+}
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
