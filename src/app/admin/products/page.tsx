@@ -119,9 +119,7 @@ const res = await apiFetch(`/api/products/${deleteTarget.id}`, {
           <h1 className="text-2xl font-black text-neutral-900 tracking-tight">
             Product Management
           </h1>
-          <p className="text-xs sm:text-sm text-neutral-500 mt-1">
-            Manage your press-on nail styles, shapes, inventory, and pricing.
-          </p>
+          
         </div>
         <Link
           href="/admin/products/create"

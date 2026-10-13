@@ -123,14 +123,11 @@ const res = await apiFetch(`/api/dashboard/stats`, {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-6 rounded-2xl border border-neutral-200/80 shadow-2xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#c9776c] animate-pulse" />
+            
             <h1 className="text-lg sm:text-2xl font-bold text-neutral-900 tracking-tight">
-              Shop Overview
+              Shop 
             </h1>
           </div>
-          <p className="text-[11px] sm:text-xs text-neutral-500 mt-0.5">
-            Real-time operations &amp; inventory control panel for X-ON Nails Atelier
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -353,7 +350,7 @@ const res = await apiFetch(`/api/dashboard/stats`, {
                       <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[9px] uppercase">
                         {ord.orderStatus}
                       </span>
-                    </div>
+                    </div>  
                   </Link>
                 ))
               ) : (
